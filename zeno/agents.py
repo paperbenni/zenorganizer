@@ -15,10 +15,10 @@ from .storage import get_memories
 
 def getModel() -> OpenAIModel:
     return OpenAIModel(
-        "github_copilot/gpt-5-mini",
+        os.environ["MODEL_NAME"],
         provider=OpenAIProvider(
             api_key=os.environ["OPENAI_API_KEY"],
-            base_url="https://litellm.paperbenni.xyz/v1",
+            base_url=os.environ["OPENAI_BASE_URL"],
         ),
     )
 
