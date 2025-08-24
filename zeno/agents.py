@@ -13,14 +13,6 @@ from .models import Memory
 from .storage import get_memories
 
 
-def getModel() -> OpenAIModel:
-    return OpenAIModel(
-        os.environ["MODEL_NAME"],
-        provider=OpenAIProvider(
-            api_key=os.environ["OPENAI_API_KEY"],
-            base_url=os.environ["OPENAI_BASE_URL"],
-        ),
-    )
 
 
 cleanerprefix = """# RULES
@@ -42,15 +34,13 @@ Today is { datetime.now().strftime("%Y-%m-%d") }"""
 
 
 def get_model() -> OpenAIModel:
-    dotenv.load_dotenv()
     return OpenAIModel(
-        "github_copilot/gpt-5-mini",
+        os.environ["MODEL_NAME"],
         provider=OpenAIProvider(
             api_key=os.environ["OPENAI_API_KEY"],
-            base_url="https://litellm.paperbenni.xyz/v1",
+            base_url=os.environ["OPENAI_BASE_URL"],
         ),
     )
-
 
 async def delete_memory(ctx: RunContext, id: int):
     """
@@ -126,7 +116,7 @@ Here are the Memories in Markdown format:
 
 def build_deduplicator_agent() -> Agent:
     dedup_agent = Agent(
-        model=getModel(),
+        model=get_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
         system_prompt=f"""{cleanerprefix}
 
@@ -160,7 +150,7 @@ Here are the Memories in Markdown format:
 def build_garbage_collector_agent() -> Agent:
 
     garbage_collector_agent = Agent(
-        model=getModel(),
+        model=get_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
         system_prompt=f"""{cleanerprefix}
 

@@ -39,8 +39,9 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
     messages: list[ModelMessage] = []
     with Session(engine) as session:  # type: ignore
         # iterate newest archives first so we can stop early when limit reached
+        # order_by defaults to ascending; use descending to get newest first
         archives = session.exec(  # type: ignore
-            select(MessageArchive).order_by(MessageArchive.created_time)
+            select(MessageArchive).order_by(MessageArchive.created_time.desc())
         ).all()
 
     for archive in archives:
