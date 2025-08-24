@@ -20,8 +20,8 @@ def init_db() -> None:
 def get_memories(show_id: bool) -> str:
     memories = []
     output = ""
-    with Session(engine) as session:
-        memories.extend(session.exec(select(Memory)).all())
+    with Session(engine) as session:  # type: ignore
+        memories.extend(session.exec(select(Memory)).all())  # type: ignore
     for memory in memories:
         if show_id:
             output += f"\n---\nID: {memory.id}"
@@ -37,9 +37,9 @@ def get_memories(show_id: bool) -> str:
 def get_old_messages(limit: int) -> List[ModelMessage]:
     # Collect messages across archives until we've reached the total `limit` messages.
     messages: list[ModelMessage] = []
-    with Session(engine) as session:
+    with Session(engine) as session:  # type: ignore
         # iterate newest archives first so we can stop early when limit reached
-        archives = session.exec(
+        archives = session.exec(  # type: ignore
             select(MessageArchive).order_by(MessageArchive.created_time)
         ).all()
 
@@ -58,6 +58,6 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
 
 def store_message_archive(content: bytes) -> None:
     archive = MessageArchive(content=content, created_time=datetime.now())
-    with Session(engine) as session:
-        session.add(archive)
-        session.commit()
+    with Session(engine) as session:  # type: ignore
+        session.add(archive)  # type: ignore
+        session.commit()  # type: ignore

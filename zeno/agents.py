@@ -62,11 +62,11 @@ async def delete_memory(ctx: RunContext, id: int):
     from .storage import engine
     from sqlmodel import Session
 
-    with Session(engine) as session:
-        memory = session.get(Memory, id)
+    with Session(engine) as session:  # type: ignore
+        memory = session.get(Memory, id)  # type: ignore
         if memory:
-            session.delete(memory)
-            session.commit()
+            session.delete(memory)  # type: ignore
+            session.commit()  # type: ignore
 
 
 async def store_memory(ctx: RunContext, content: str):
@@ -78,11 +78,12 @@ async def store_memory(ctx: RunContext, content: str):
     """
     from sqlmodel import Session
     from .models import Memory
+    from .storage import engine
 
     memory = Memory(content=content, created_time=datetime.now())
-    with Session(storage.engine) as session:
-        session.add(memory)
-        session.commit()
+    with Session(engine) as session:  # type: ignore
+        session.add(memory)  # type: ignore
+        session.commit()  # type: ignore
 
 
 def build_chat_agent() -> Agent:
