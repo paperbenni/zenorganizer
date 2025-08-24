@@ -22,6 +22,7 @@ def getModel() -> OpenAIModel:
         ),
     )
 
+
 cleanerprefix = """# RULES
 You are an agent tasked with cleaning up the memories of another agentic system.
 The memories are all sorted by the time they were created.
@@ -31,16 +32,17 @@ tooldescriptions = {
     "delete": """## Delete Memory
 Use this to delete a memory via its ID. Be very careful and conservative when deleting memories. When in doubt, then keep the memory. When in doubt, do not delete.""",
     "store": """## Save Memory
-Use this tool to store information about the user. Extract and summarize interesting information from the user message and pass it to this tool."""
+Use this tool to store information about the user. Extract and summarize interesting information from the user message and pass it to this tool.""",
 }
+
 
 def infoprompt() -> str:
     return f"""# INFO
 Today is { datetime.now().strftime("%Y-%m-%d") }"""
 
+
 def get_model() -> OpenAIModel:
     dotenv.load_dotenv()
-    # Keep the original model/provider wiring but note: secrets should come from env vars.
     return OpenAIModel(
         "github_copilot/gpt-5-mini",
         provider=OpenAIProvider(
@@ -134,8 +136,7 @@ If there are duplicate memories, memorizing the same thing, remove some of them 
 If there are memories which contradict each other, then assume the newest one is correct and remove the older contradicting ones.
 
 # Tools
-## Delete Memory
-Use this to delete a memory via its ID. Be very careful and conservative when deleting memories. When in doubt, then keep the memory. When in doubt, do not modify a memory.
+{tooldescriptions['delete']}
 
 # INFO
 Today is { datetime.now().strftime("%Y-%m-%d") }""",
@@ -169,8 +170,7 @@ If a memory itself states it should be deleted, or if the memory and its deletio
 BE SURE NOT TO REMOVE RECURRING REMINDERS.
 
 # Tools
-## Delete Memory
-Use this to delete a memory via its ID. Be very careful and conservative when deleting memories. When in doubt, then keep the memory. When in doubt, do not delete
+{tooldescriptions['delete']}
 
 # INFO
 Today is { datetime.now().strftime("%Y-%m-%d") }
