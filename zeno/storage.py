@@ -33,19 +33,27 @@ def get_memories(show_id: bool) -> str:
     return output
     return output
 
+
 from pydantic_ai.messages import ToolReturnPart
+
 
 def message_contains_toolreturnpart(messages: List[ModelMessage], index: int) -> bool:
     return any(isinstance(part, ToolReturnPart) for part in messages[index].parts)
 
-def keep_recent_messages(messages: List[ModelMessage], limit: int) -> List[ModelMessage]:
+
+def keep_recent_messages(
+    messages: List[ModelMessage], limit: int
+) -> List[ModelMessage]:
     number_of_messages = len(messages)
     number_of_messages_to_keep = limit
     if number_of_messages <= number_of_messages_to_keep:
         return messages
-    if message_contains_toolreturnpart(messages, number_of_messages - number_of_messages_to_keep):
+    if message_contains_toolreturnpart(
+        messages, number_of_messages - number_of_messages_to_keep
+    ):
         return messages
     return messages[-number_of_messages_to_keep:]
+
 
 def get_old_messages(limit: int) -> List[ModelMessage]:
     # Collect messages across archives until we've reached the total `limit` messages.
@@ -54,7 +62,9 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
         # iterate newest archives first so we can stop early when limit reached
         # order_by defaults to ascending; use descending to get newest first
         archives = session.exec(  # type: ignore
-            select(MessageArchive).order_by(MessageArchive.created_time.desc()).limit(limit)
+            select(MessageArchive)
+            .order_by(MessageArchive.created_time.desc())
+            .limit(limit)
         ).all()
 
     for archive in archives:

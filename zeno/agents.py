@@ -13,8 +13,6 @@ from .models import Memory
 from .storage import get_memories
 
 
-
-
 cleanerprefix = """# RULES
 You are an agent tasked with cleaning up the memories of another agentic system.
 The memories are all sorted by the time they were created.
@@ -43,6 +41,7 @@ def get_model() -> OpenAIModel:
             base_url=os.environ["OPENAI_BASE_URL"],
         ),
     )
+
 
 async def delete_memory(ctx: RunContext, id: int):
     """
@@ -135,6 +134,45 @@ Here are the Memories in Markdown format:
 **end of memories**"""
 
     return chatagent
+
+
+def build_splitter_agent() -> Agent:
+    splitter_agent = Agent(
+        model=get_model(),
+        toolsets=[FunctionToolset(tools=[delete_memory, store_memory, update_memory])],
+        system_prompt=f"""{cleanerprefix}
+
+# Tasks
+## Split overaggregated memories
+Memories can only be deleted in their entirety. If a memory states that part of an aggregated memory should be forgotten, then split that part into a separate memory. 
+If a memory contains information about something no longer relevant, like a reminder sent in the far past, then split that into a separate memory, and remove that information from the original memory. 
+Time sensitive information should always be kept separate from information that is not time sensitive. 
+Do not include logs about what you changed inside the memory content. 
+
+# Tools
+
+{tooldescriptions['delete']}
+{tooldescriptions['store']}
+{tooldescriptions['update']}
+
+# INFO
+Today is { datetime.now().strftime("%Y-%m-%d %H:%M:%S") }
+
+""",
+    )
+
+    @splitter_agent.system_prompt
+    def get_memories_prompt(ctx: RunContext) -> str:
+        return f"""# Memories
+Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
+
+Here are the Memories in Markdown format:
+
+{storage.get_memories(True)}
+
+**end of memories**"""
+
+    return splitter_agent
 
 
 def build_deduplicator_agent() -> Agent:

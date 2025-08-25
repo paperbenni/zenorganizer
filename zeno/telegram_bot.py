@@ -39,7 +39,9 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     # TODO: make this configurable or use the DB
     if message.from_user.id != 1172527123:
-        await context.bot.send_message(chat_id=chat.id, text="You are not authorized to use this bot.")
+        await context.bot.send_message(
+            chat_id=chat.id, text="You are not authorized to use this bot."
+        )
         return
 
     agent = build_chat_agent()
@@ -59,7 +61,9 @@ def run_bot() -> None:
 
     application = ApplicationBuilder().token(token).build()
     start_handler = CommandHandler("start", start)
-    chat_handler = MessageHandler(filters.USER & filters.TEXT & (~filters.COMMAND), run_chat_agent)
+    chat_handler = MessageHandler(
+        filters.USER & filters.TEXT & (~filters.COMMAND), run_chat_agent
+    )
     application.add_handler(start_handler)
     application.add_handler(chat_handler)
     application.run_polling()
