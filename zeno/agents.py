@@ -56,13 +56,16 @@ Here are the Memories in Markdown format:
 import dotenv
 dotenv.load_dotenv()
 
-openai_model = OpenAIModel(
-        os.environ["MODEL_NAME"],
-        provider=OpenAIProvider(
-            api_key=os.environ["OPENAI_API_KEY"],
-            base_url=os.environ["OPENAI_BASE_URL"],
-        ),
-    )
+def get_openai_model() -> OpenAIModel:
+    openai_model = OpenAIModel(
+            os.environ["MODEL_NAME"],
+            provider=OpenAIProvider(
+                api_key=os.environ["OPENAI_API_KEY"],
+                base_url=os.environ["OPENAI_BASE_URL"],
+            ),
+        )
+    return openai_model
+
 
 async def delete_memory(ctx: RunContext, id: int):
     """
@@ -121,14 +124,9 @@ async def update_memory(ctx: RunContext, id: int, content: str):
             session.add(memory)  # type: ignore
             session.commit()  # type: ignore
 
-chatagent = Agent(
-    model=openai_model,
-    toolsets=[FunctionToolset(tools=[store_memory])],
-)
-
-@chatagent.instructions
-def get_chat_instructions() -> str:
-    return f"""# RULES
+def build_chat_agent() -> Agent:
+    def get_chat_instructions() -> str:
+        return f"""# RULES
 When a user sends a new message, decide if the user provided any noteworthy information that should be stored in memory. If so, call the Save Memory tool to store this information in memory.
 Reminders should always go in memory, along with a time.
 Anything containing updated information about a memory should be a memory.
@@ -141,12 +139,20 @@ You can also mark memories which should be forgotten by inserting a memory stati
 
 {get_memories_prompt()}
 {get_time_prompt()}
-"""
+    """
+
+    chat_agent = Agent(
+        model=get_openai_model(),
+        instructions=get_chat_instructions(),
+        toolsets=[FunctionToolset(tools=[store_memory])],
+    )
+
+    return chat_agent
 
 
 def build_splitter_agent() -> Agent:
     splitter_agent = Agent(
-        model=openai_model,
+        model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory, store_memory, update_memory])],
         instructions=f"""{cleanerprefix}
 
@@ -175,7 +181,7 @@ Do not include logs about what you changed inside the memory content.
 
 def build_aggregator_agent() -> Agent:
     aggregator_agent = Agent(
-        model=openai_model,
+        model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[store_memory, delete_memory])],
         instructions=f"""{cleanerprefix}
 
@@ -203,7 +209,7 @@ If you see instances of this, split the memories. Make sure to include the date.
 
 def build_deduplicator_agent() -> Agent:
     dedup_agent = Agent(
-        model=openai_model,
+        model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
         instructions=f"""{cleanerprefix}
 
@@ -227,7 +233,7 @@ If there are memories which contradict each other, then assume the newest one is
 def build_garbage_collector_agent() -> Agent:
 
     garbage_collector_agent = Agent(
-        model=openai_model,
+        model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
         instructions=f"""{cleanerprefix}
 
@@ -306,7 +312,7 @@ def build_reminder_agent() -> Agent:
             logfire.info("failed to store reminder message")
 
     reminder_agent = Agent(
-        model=openai_model,
+        model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[send_reminder, store_memory])],
         instructions=f"""# RULES
 You are an agent tasked with sending a user reminders. You are given a list of memories and the current time. If a memory looks like the user should be reminded of, send the user a reminder with. Also record a new memory marking that the reminder has been sent, so that you will not remind the user more than they requested.

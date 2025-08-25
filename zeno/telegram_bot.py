@@ -43,7 +43,8 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=chat.id, text="You are not authorized to use this bot."
         )
         return
-    from .agents import chatagent
+    from .agents import build_chat_agent
+    chatagent = build_chat_agent()
     response = await chatagent.run(message.text, message_history=get_old_messages(10))
     messages = response.new_messages_json()
     # use storage helper to persist the message archive
