@@ -6,12 +6,8 @@ import pytz
 from sqlmodel import Session, create_engine, select, desc
 
 from .models import Memory, MessageArchive
+from .utils import get_current_time
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
-
-
-def get_current_time() -> datetime:
-    """Get current datetime in Europe/Berlin timezone."""
-    return datetime.now(pytz.timezone('Europe/Berlin'))
 
 
 engine = create_engine("sqlite:///test.db", echo=True)

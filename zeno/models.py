@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 from sqlmodel import Field, SQLModel
 
-from .storage import get_current_time
+from .utils import get_current_time
 
 
 class Memory(SQLModel, table=True):

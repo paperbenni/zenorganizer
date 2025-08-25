@@ -2959,6 +2959,7 @@ dependencies = [
     { name = "pydantic-ai", extra = ["examples"] },
     { name = "pyrefly" },
     { name = "python-telegram-bot" },
+    { name = "pytz" },
     { name = "sqlmodel" },
     { name = "uvicorn" },
 ]
@@ -2972,6 +2973,7 @@ requires-dist = [
     { name = "pydantic-ai", extras = ["examples"], specifier = ">=0.7.4" },
     { name = "pyrefly", specifier = ">=0.29.2" },
     { name = "python-telegram-bot", specifier = ">=22.3" },
+    { name = "pytz", specifier = ">=2024.1" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
     { name = "uvicorn", specifier = ">=0.35.0" },
 ]

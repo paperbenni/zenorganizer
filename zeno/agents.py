@@ -15,6 +15,7 @@ from sqlalchemy.sql.functions import now
 from . import storage
 from .models import Memory
 from .storage import get_memories
+from .utils import get_current_time
 
 cleanerprefix = """# RULES
 You are an agent tasked with cleaning up the memories of another agentic system.
@@ -31,9 +32,7 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 }
 
 
-def get_current_time() -> datetime:
-    """Get current datetime in Europe/Berlin timezone."""
-    return datetime.now(pytz.timezone('Europe/Berlin'))
+
 
 
 def get_time_prompt() -> str:
