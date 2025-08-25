@@ -45,9 +45,9 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
             .limit(limit)
         ).all()
 
-        for archive in archives:
+        for archive in reversed(archives):
             msgs = ModelMessagesTypeAdapter.validate_json(archive.content)
-            messages.extend(reversed(msgs))
+            messages.extend(msgs)
             if len(messages) >= limit:
                 break
 
