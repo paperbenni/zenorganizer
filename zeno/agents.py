@@ -33,6 +33,23 @@ def infoprompt() -> str:
 Today is { datetime.now().strftime("%Y-%m-%d") }"""
 
 
+def attach_memories_prompt(agent: Agent) -> None:
+    @agent.system_prompt
+    def _memories(ctx: RunContext) -> str:
+        return f"""# Memories
+Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
+!! IMPORTANT!
+Think carefully about your responses and take the user's preferences into account!
+Also consider the date and time that a memory was shared in order to respond with the most up to date information.
+
+Here are the Memories in Markdown format:
+
+{storage.get_memories(True)}
+
+**end of memories**"""
+
+
+
 def get_model() -> OpenAIModel:
     return OpenAIModel(
         os.environ["MODEL_NAME"],
@@ -119,19 +136,7 @@ Today is { datetime.now().strftime("%Y-%m-%d") }
         """,
     )
 
-    @chatagent.system_prompt
-    def get_memories_prompt(ctx: RunContext) -> str:
-        return f"""# Memories
-Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
-!! IMPORTANT!
-Think carefully about your responses and take the user's preferences into account!
-Also consider the date and time that a memory was shared in order to respond with the most up to date information.
-
-Here are the Memories in Markdown format:
-
-{storage.get_memories(True)}
-
-**end of memories**"""
+    attach_memories_prompt(chatagent)
 
     return chatagent
 
@@ -161,16 +166,7 @@ Today is { datetime.now().strftime("%Y-%m-%d %H:%M:%S") }
 """,
     )
 
-    @splitter_agent.system_prompt
-    def get_memories_prompt(ctx: RunContext) -> str:
-        return f"""# Memories
-Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
-
-Here are the Memories in Markdown format:
-
-{storage.get_memories(True)}
-
-**end of memories**"""
+    attach_memories_prompt(splitter_agent)
 
     return splitter_agent
 
@@ -194,16 +190,7 @@ If there are memories which contradict each other, then assume the newest one is
 Today is { datetime.now().strftime("%Y-%m-%d") }""",
     )
 
-    @dedup_agent.system_prompt
-    def get_memories_prompt(ctx: RunContext) -> str:
-        return f"""# Memories
-Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
-
-Here are the Memories in Markdown format:
-
-{storage.get_memories(True)}
-
-**end of memories**"""
+    attach_memories_prompt(dedup_agent)
 
     return dedup_agent
 
@@ -229,14 +216,6 @@ Today is { datetime.now().strftime("%Y-%m-%d") }
         """,
     )
 
-    @garbage_collector_agent.system_prompt
-    def get_memories_prompt(ctx: RunContext) -> str:
-        return f"""# Memories
-Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
-
-Here are the Memories in Markdown format:
-
-{get_memories(True)}
-**end of memories**"""
+    attach_memories_prompt(garbage_collector_agent)
 
     return garbage_collector_agent
