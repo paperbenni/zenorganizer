@@ -171,6 +171,32 @@ Today is { datetime.now().strftime("%Y-%m-%d %H:%M:%S") }
     return splitter_agent
 
 
+def build_aggregator_agent() -> Agent:
+    aggregator_agent = Agent(
+        model=get_model(),
+        toolsets=[FunctionToolset(tools=[store_memory, delete_memory])],
+        system_prompt=f"""{cleanerprefix}
+
+## Aggregate memories
+If several memories contain small, related pieces of information that would be
+more useful combined into a single memory, merge them into a concise summary
+memory. Keep time-sensitive facts separate when appropriate. Do not invent new
+facts; only summarize and combine existing memories. Do not reduce the amount of
+information while summarizing
+
+# Tools
+{tooldescriptions['store']}
+{tooldescriptions['delete']}
+
+# INFO
+Today is { datetime.now().strftime("%Y-%m-%d") }""",
+    )
+
+    attach_memories_prompt(aggregator_agent)
+
+    return aggregator_agent
+
+
 def build_deduplicator_agent() -> Agent:
     dedup_agent = Agent(
         model=get_model(),
