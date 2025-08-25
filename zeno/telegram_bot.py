@@ -27,6 +27,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    import logfire
     chat = update.effective_chat
     message = update.message
     if chat is None or message is None:
@@ -46,6 +47,7 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     agent = build_chat_agent()
     response = await agent.run(message.text, message_history=get_old_messages(10))
+    logfire.info(f"Chat agent system prompt {agent.system_prompt()}")
     messages = response.new_messages_json()
     # use storage helper to persist the message archive
     store_message_archive(messages)
