@@ -177,12 +177,15 @@ def build_aggregator_agent() -> Agent:
         toolsets=[FunctionToolset(tools=[store_memory, delete_memory])],
         system_prompt=f"""{cleanerprefix}
 
-## Aggregate memories
-If several memories contain small, related pieces of information that would be
-more useful combined into a single memory, merge them into a concise summary
-memory. Keep time-sensitive facts separate when appropriate. Do not invent new
-facts; only summarize and combine existing memories. Do not reduce the amount of
-information while summarizing
+##Aggregate memories
+If there are multiple memories which only make sense when put together, then delete them and add a new memory with the information from all of them.
+For example a memory containing a list of things, and another memory adding things to that list should be aggregated into a single memory containing the entire list. 
+Examples of this include memories with missing information and another memory providing that information. 
+Make sure memories stay with a single responsibility, similar to programming. It is okay not to aggregate anything if that is what seems best. 
+Make sure that if the original memories were time sensitive to include the date the memories pertain to in the content. 
+Keep in mind aggregating a memory changes its creation date. If a memory is time sensitive, include the full date it pertains to in the memory content. 
+IMPORTANT: Keep information which should be deleted separately separate. Examples of this include reminders about information, and the information itself. 
+If you see instances of this, split the memories. Make sure to include the date. 
 
 # Tools
 {tooldescriptions['store']}
