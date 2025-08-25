@@ -46,10 +46,12 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
             .limit(limit)
         ).all()
 
+        archivecounter = 0
         for archive in reversed(archives):
             msgs = ModelMessagesTypeAdapter.validate_json(archive.content)
             messages.extend(msgs)
-            if len(messages) >= limit:
+            archivecounter += 1
+            if archivecounter >= limit:
                 break
 
     # We collected newest-first; return messages in chronological order (oldest->newest)

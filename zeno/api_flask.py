@@ -27,7 +27,7 @@ def old_messages():
     try:
         limit = int(request.args.get("limit", "20"))
     except ValueError:
-        limit = 20
+        limit = 5
 
     msgs = storage.get_old_messages(limit)
     md = "# Old Messages\n\n"
@@ -45,7 +45,6 @@ def old_messages():
                 md += f"{str(p)}\n\n"
         md += "---\n"
     return Response(md, mimetype="text/markdown")
-   
 
 
 if __name__ == "__main__":
