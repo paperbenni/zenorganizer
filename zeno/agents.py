@@ -126,8 +126,8 @@ chatagent = Agent(
     toolsets=[FunctionToolset(tools=[store_memory])],
 )
 
-@chatagent.system_prompt
-def get_chat_system_prompt() -> str:
+@chatagent.instructions
+def get_chat_instructions() -> str:
     return f"""# RULES
 When a user sends a new message, decide if the user provided any noteworthy information that should be stored in memory. If so, call the Save Memory tool to store this information in memory.
 Reminders should always go in memory, along with a time.
@@ -148,7 +148,7 @@ def build_splitter_agent() -> Agent:
     splitter_agent = Agent(
         model=openai_model,
         toolsets=[FunctionToolset(tools=[delete_memory, store_memory, update_memory])],
-        system_prompt=f"""{cleanerprefix}
+        instructions=f"""{cleanerprefix}
 
 # Tasks
 ## Split overaggregated memories
@@ -177,7 +177,7 @@ def build_aggregator_agent() -> Agent:
     aggregator_agent = Agent(
         model=openai_model,
         toolsets=[FunctionToolset(tools=[store_memory, delete_memory])],
-        system_prompt=f"""{cleanerprefix}
+        instructions=f"""{cleanerprefix}
 
 ##Aggregate memories
 If there are multiple memories which only make sense when put together, then delete them and add a new memory with the information from all of them.
@@ -205,7 +205,7 @@ def build_deduplicator_agent() -> Agent:
     dedup_agent = Agent(
         model=openai_model,
         toolsets=[FunctionToolset(tools=[delete_memory])],
-        system_prompt=f"""{cleanerprefix}
+        instructions=f"""{cleanerprefix}
 
 ##Deduplicate memories
 If there are duplicate memories, memorizing the same thing, remove some of them and keep the last one.
@@ -229,7 +229,7 @@ def build_garbage_collector_agent() -> Agent:
     garbage_collector_agent = Agent(
         model=openai_model,
         toolsets=[FunctionToolset(tools=[delete_memory])],
-        system_prompt=f"""{cleanerprefix}
+        instructions=f"""{cleanerprefix}
 
 # Tasks
 ##Remove old reminders and memories to be deleted
@@ -308,7 +308,7 @@ def build_reminder_agent() -> Agent:
     reminder_agent = Agent(
         model=openai_model,
         toolsets=[FunctionToolset(tools=[send_reminder, store_memory])],
-        system_prompt=f"""# RULES
+        instructions=f"""# RULES
 You are an agent tasked with sending a user reminders. You are given a list of memories and the current time. If a memory looks like the user should be reminded of, send the user a reminder with. Also record a new memory marking that the reminder has been sent, so that you will not remind the user more than they requested.
 Pay attention to when a memory is relevant. You know the current date and time, only send reminders for memories which are currently relevant and time sensitive.
 For example if a memory says to remind the user of something daily, send a reminder and also record a memory saying that on the current day, the reminder has already been sent.
