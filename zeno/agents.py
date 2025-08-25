@@ -255,9 +255,15 @@ def build_reminder_agent() -> Agent:
     memories are due. Activated periodically (every 15 minutes).
     """
 
-    async def send_telegram(ctx: RunContext, message: str):
+    async def send_reminder(ctx: RunContext, message: str):
+        """
+        Send a seminder message
+
+        Args:
+            message: The message to send
+        """
         # send a telegram message to the hardcoded user (same as user check)
-        from .telegram_bot import Application, run_bot
+        from .telegram_bot import Application
         import os
         # We can't easily access the live Application here; instead, use bot token and
         # python-telegram-bot's simple API to send a message.
@@ -269,32 +275,33 @@ def build_reminder_agent() -> Agent:
         bot = Bot(token=token)
         # hardcoded chat id (same as in telegram bot user check)
         chat_id = 1172527123
-        bot.send_message(chat_id=chat_id, text=message)
-
-
-    async def add_memory_tool(ctx: RunContext, content: str):
-        # reuse existing store_memory tool
-        await store_memory(ctx, content)
+        await bot.send_message(chat_id=chat_id, text=message)
 
     reminder_agent = Agent(
         model=get_model(),
-        toolsets=[FunctionToolset(tools=[send_telegram, add_memory_tool, store_memory])],
+        toolsets=[FunctionToolset(tools=[send_reminder, store_memory])],
         system_prompt=f"""# RULES
-You are an agent that runs periodically (every 15 minutes) to scan memories for time-critical reminders. You have access to:
-- a tool to send telegram messages
-- a tool to store new memories
-You are given the current time and the current memories. If you see a memory that contains a reminder or time-critical instruction and the current time indicates it is due, send a telegram reminder message describing the reminder. Avoid sending duplicate reminders for the same one-time reminder; when you send a one-time reminder, also store a short memory noting that the reminder was sent.
+You are an agent tasked with sending a user reminders. You are given a list of memories and the current time. If a memory looks like the user should be reminded of, send the user a reminder with. Also record a new memory marking that the reminder has been sent, so that you will not remind the user more than they requested. 
+Pay attention to when a memory is relevant. You know the current date and time, only send reminders for memories which are currently relevant and time sensitive. 
+For example if a memory says to remind the user of something daily, send a reminder and also record a memory saying that on the current day, the reminder has already been sent. 
+If the reminder is a one-time thing, then send the reminder and save a memory saying the reminder can be deleted. Make sure it is clear which reminder the new memory is referring to, include the entire reminder memory if necessary
+
+Do not send any reminders or do anything if no reminders are relevant
+You are only activated every 15 minutes, with some unreliability, so anything 20 minutes into the future or into the past is definitely relevant. Relevance might span even further into the future or past if the reminder contains information about its length of relevance
+
+
+# Tools
+## Save Memory
+Use this tool to store information about the user and reminders. Use this to store information about reminders you already did. NEVER mark a reminder as sent before you have not used the Send Reminder tool to send the reminder. If the send tool fails, retry up to 20 times, and if it still fails, then do not mark reminders as sent
+
+## Send Reminder
+Use this tool to send a reminder. Be very liberal with this. If something looks like it could be relevant, it probably is.
 
 # INFO
 Today is { datetime.now().strftime("%Y-%m-%d %H:%M:%S") }
         """,
     )
 
-    @reminder_agent.system_prompt
-    def _attach_memories(ctx: RunContext) -> str:
-        # Attach current memories and current time to the agent's system prompt
-        from .storage import get_memories
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
-        return f"""# Memories\nCurrent time: {current_time}\n\n{get_memories(True)}\n"""
+    attach_memories_prompt(reminder_agent)
 
     return reminder_agent
