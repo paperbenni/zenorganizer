@@ -2,11 +2,14 @@ from datetime import datetime
 from typing import Callable
 
 import dotenv
+import logfire
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.toolsets import FunctionToolset
 import os
+
+from sqlalchemy.sql.functions import now
 
 from . import storage
 from .models import Memory
@@ -265,6 +268,7 @@ def build_reminder_agent() -> Agent:
         # send a telegram message to the hardcoded user (same as user check)
         from .telegram_bot import Application
         import os
+
         # We can't easily access the live Application here; instead, use bot token and
         # python-telegram-bot's simple API to send a message.
         from telegram import Bot
@@ -276,6 +280,32 @@ def build_reminder_agent() -> Agent:
         # hardcoded chat id (same as in telegram bot user check)
         chat_id = 1172527123
         await bot.send_message(chat_id=chat_id, text=message)
+
+        # Also save this reminder as a normal assistant message in the message archive
+        # so it will be included in future `get_old_messages` calls. Construct a
+        # ModelResponse containing a single TextPart and serialize it using the
+        # same adapter used by `store_message_archive`.
+        try:
+            from .storage import store_message_archive
+            from pydantic_ai.messages import (
+                ModelResponse,
+                TextPart,
+                ModelMessagesTypeAdapter,
+            )
+            from pydantic_ai.messages import RequestUsage
+
+            response = ModelResponse(
+                parts=[TextPart(content=message)],
+                usage=RequestUsage(),
+                model_name=ctx.model.model_name,
+                timestamp=datetime.now(),
+            )
+            # serialize to bytes the same way archives are stored
+            json_bytes = ModelMessagesTypeAdapter.dump_json([response])
+            store_message_archive(json_bytes)
+        except Exception:
+            # Don't let failures to persist the archive stop the reminder sending
+            logfire.info("failed to store reminder message")
 
     reminder_agent = Agent(
         model=get_model(),

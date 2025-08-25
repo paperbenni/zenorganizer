@@ -25,3 +25,7 @@ User management
 - Do not hardcode user ids
 
 Logfire thingy
+
+Solve time zone confusion
+AM/PM thingy
+

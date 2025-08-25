@@ -33,10 +33,12 @@ def old_messages():
     # Convert messages to a simple representation
     out = []
     for m in msgs:
-        out.append({
-            "parts": [type(p).__name__ for p in m.parts],
-            "raw": getattr(m, "json", lambda: str(m))(),
-        })
+        out.append(
+            {
+                "parts": [type(p).__name__ for p in m.parts],
+                "raw": getattr(m, "json", lambda: str(m))(),
+            }
+        )
 
     return jsonify({"count": len(out), "messages": out})
 

@@ -36,6 +36,7 @@ def get_memories(show_id: bool) -> str:
 
 from pydantic_ai.messages import ToolReturnPart
 
+
 def get_old_messages(limit: int) -> List[ModelMessage]:
     messages: list[ModelMessage] = []
     with Session(engine) as session:  # type: ignore
