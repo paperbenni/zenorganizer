@@ -25,6 +25,8 @@ tooldescriptions = {
 Use this to delete a memory via its ID. Be very careful and conservative when deleting memories. When in doubt, then keep the memory. When in doubt, do not delete.""",
     "store": """## Save Memory
 Use this tool to store information about the user. Extract and summarize interesting information from the user message and pass it to this tool.""",
+    "update": """## Update Memory
+Use this tool to update an existing memory by its ID. Provide the memory ID and the new content to replace the existing memory.""",
 }
 
 
@@ -74,6 +76,27 @@ async def store_memory(ctx: RunContext, content: str):
     with Session(engine) as session:  # type: ignore
         session.add(memory)  # type: ignore
         session.commit()  # type: ignore
+
+
+async def update_memory(ctx: RunContext, id: int, content: str):
+    """
+    Update a memory's content by ID
+
+    Args:
+        id: The id of the memory to update
+        content: The new content for the memory
+    """
+    from sqlmodel import Session
+    from .models import Memory
+    from .storage import engine
+
+    with Session(engine) as session:  # type: ignore
+        memory = session.get(Memory, id)  # type: ignore
+        if memory:
+            memory.content = content  # type: ignore
+            memory.created_time = datetime.now()  # update timestamp to now
+            session.add(memory)  # type: ignore
+            session.commit()  # type: ignore
 
 
 def build_chat_agent() -> Agent:
