@@ -11,7 +11,6 @@ from telegram.ext import (
     filters,
 )
 
-from .agents import build_chat_agent
 from .storage import init_db, get_old_messages, store_message_archive
 
 logging.basicConfig(
@@ -44,10 +43,8 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
             chat_id=chat.id, text="You are not authorized to use this bot."
         )
         return
-
-    agent = build_chat_agent()
-    response = await agent.run(message.text, message_history=get_old_messages(10))
-    logfire.info(f"Chat agent system prompt {agent.system_prompt()}")
+    from .agents import chatagent
+    response = await chatagent.run(message.text, message_history=get_old_messages(10))
     messages = response.new_messages_json()
     # use storage helper to persist the message archive
     store_message_archive(messages)
