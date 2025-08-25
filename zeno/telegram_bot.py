@@ -33,6 +33,15 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if message.text is None:
         return
+    print("sender from")
+    print(message.from_user)
+    if message.from_user is None:
+        return
+    # TODO: make this configurable or use the DB
+    if message.from_user.id != 1172527123:
+        await context.bot.send_message(chat_id=chat.id, text="You are not authorized to use this bot.")
+        return
+
     agent = build_chat_agent()
     response = await agent.run(message.text, message_history=get_old_messages(20))
     messages = response.new_messages_json()
@@ -50,7 +59,7 @@ def run_bot() -> None:
 
     application = ApplicationBuilder().token(token).build()
     start_handler = CommandHandler("start", start)
-    echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), run_chat_agent)
+    chat_handler = MessageHandler(filters.USER & filters.TEXT & (~filters.COMMAND), run_chat_agent)
     application.add_handler(start_handler)
-    application.add_handler(echo_handler)
+    application.add_handler(chat_handler)
     application.run_polling()
