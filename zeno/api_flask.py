@@ -21,5 +21,25 @@ def deduplicate():
     return jsonify({"output": resp.output})
 
 
+@app.route("/old_messages")
+def old_messages():
+    # Return the last `limit` messages (default 20) as JSON-serializable dicts.
+    try:
+        limit = int(request.args.get("limit", "20"))
+    except ValueError:
+        limit = 20
+
+    msgs = storage.get_old_messages(limit)
+    # Convert messages to a simple representation
+    out = []
+    for m in msgs:
+        out.append({
+            "parts": [type(p).__name__ for p in m.parts],
+            "raw": getattr(m, "json", lambda: str(m))(),
+        })
+
+    return jsonify({"count": len(out), "messages": out})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8001)
