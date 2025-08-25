@@ -7,9 +7,13 @@ def main():
     from zeno.api_flask import app as flask_app
     import logfire
     import os
+    import dotenv
 
-    logfire_token = os.environ.get("LOGFIRE_TOKEN")
+    dotenv.load_dotenv()
+
+    logfire_token = os.environ["LOGFIRE_TOKEN"]
     if logfire_token:
+        print("Logging to LogFire!!!")
         logfire.configure(token=logfire_token)
         logfire.info('Hello, {place}!', place='World')
         logfire.instrument_pydantic_ai()
