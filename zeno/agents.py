@@ -31,7 +31,7 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 
 def attach_time_prompt(agent: Agent) -> None:
     @agent.system_prompt
-    def _time(ctx: RunContext) -> str:
+    def _add_time(ctx: RunContext) -> str:
         return f"""
 # INFO
 Today is { datetime.now().strftime("%Y-%m-%d") }"""
