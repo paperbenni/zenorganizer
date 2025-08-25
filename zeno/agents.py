@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from typing import Callable
 
@@ -7,14 +8,11 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.toolsets import FunctionToolset
-import os
-
 from sqlalchemy.sql.functions import now
 
 from . import storage
 from .models import Memory
 from .storage import get_memories
-
 
 cleanerprefix = """# RULES
 You are an agent tasked with cleaning up the memories of another agentic system.
@@ -31,15 +29,19 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 }
 
 
-def infoprompt() -> str:
-    return f"""# INFO
+def attach_time_prompt(agent: Agent) -> None:
+    @agent.system_prompt
+    def _time(ctx: RunContext) -> str:
+        return f"""
+# INFO
 Today is { datetime.now().strftime("%Y-%m-%d") }"""
 
 
 def attach_memories_prompt(agent: Agent) -> None:
     @agent.system_prompt
     def _memories(ctx: RunContext) -> str:
-        return f"""# Memories
+        return f"""
+# Memories
 Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
 !! IMPORTANT!
 Think carefully about your responses and take the user's preferences into account!
@@ -69,8 +71,9 @@ async def delete_memory(ctx: RunContext, id: int):
     Args:
         id: The id of the memory
     """
-    from .storage import engine
     from sqlmodel import Session
+
+    from .storage import engine
 
     with Session(engine) as session:  # type: ignore
         memory = session.get(Memory, id)  # type: ignore
@@ -87,6 +90,7 @@ async def store_memory(ctx: RunContext, content: str):
         content: The content of the memory
     """
     from sqlmodel import Session
+
     from .models import Memory
     from .storage import engine
 
@@ -105,6 +109,7 @@ async def update_memory(ctx: RunContext, id: int, content: str):
         content: The new content for the memory
     """
     from sqlmodel import Session
+
     from .models import Memory
     from .storage import engine
 
@@ -130,15 +135,11 @@ The chat history is reset frequently, so anything long lived should be a memory.
 You can also mark memories which should be forgotten by inserting a memory stating that specific information is no longer important. A cleaning agent will then occasionally remove it.
 
 # Tools
-## Save Memory
-Use this tool to store information about the user. Extract and summarize interesting information from the user message and pass it to this tool.
-
-# INFO
-Today is { datetime.now().strftime("%Y-%m-%d") }
-        """,
+{tooldescriptions['store']}""",
     )
 
     attach_memories_prompt(chatagent)
+    attach_time_prompt(chatagent)
 
     return chatagent
 
@@ -162,13 +163,11 @@ Do not include logs about what you changed inside the memory content.
 {tooldescriptions['store']}
 {tooldescriptions['update']}
 
-# INFO
-Today is { datetime.now().strftime("%Y-%m-%d %H:%M:%S") }
-
 """,
     )
 
     attach_memories_prompt(splitter_agent)
+    attach_time_prompt(splitter_agent)
 
     return splitter_agent
 
@@ -192,12 +191,11 @@ If you see instances of this, split the memories. Make sure to include the date.
 # Tools
 {tooldescriptions['store']}
 {tooldescriptions['delete']}
-
-# INFO
-Today is { datetime.now().strftime("%Y-%m-%d") }""",
+""",
     )
 
     attach_memories_prompt(aggregator_agent)
+    attach_time_prompt(aggregator_agent)
 
     return aggregator_agent
 
@@ -217,11 +215,11 @@ If there are memories which contradict each other, then assume the newest one is
 # Tools
 {tooldescriptions['delete']}
 
-# INFO
-Today is { datetime.now().strftime("%Y-%m-%d") }""",
+""",
     )
 
     attach_memories_prompt(dedup_agent)
+    attach_time_prompt(dedup_agent)
 
     return dedup_agent
 
@@ -240,14 +238,11 @@ If a memory itself states it should be deleted, or if the memory and its deletio
 BE SURE NOT TO REMOVE RECURRING REMINDERS.
 
 # Tools
-{tooldescriptions['delete']}
-
-# INFO
-Today is { datetime.now().strftime("%Y-%m-%d") }
-        """,
+{tooldescriptions['delete']}""",
     )
 
     attach_memories_prompt(garbage_collector_agent)
+    attach_time_prompt(garbage_collector_agent)
 
     return garbage_collector_agent
 
@@ -266,12 +261,13 @@ def build_reminder_agent() -> Agent:
             message: The message to send
         """
         # send a telegram message to the hardcoded user (same as user check)
-        from .telegram_bot import Application
         import os
 
         # We can't easily access the live Application here; instead, use bot token and
         # python-telegram-bot's simple API to send a message.
         from telegram import Bot
+
+        from .telegram_bot import Application
 
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         if not token:
@@ -286,13 +282,14 @@ def build_reminder_agent() -> Agent:
         # ModelResponse containing a single TextPart and serialize it using the
         # same adapter used by `store_message_archive`.
         try:
-            from .storage import store_message_archive
             from pydantic_ai.messages import (
-                ModelResponse,
-                TextPart,
                 ModelMessagesTypeAdapter,
+                ModelResponse,
+                RequestUsage,
+                TextPart,
             )
-            from pydantic_ai.messages import RequestUsage
+
+            from .storage import store_message_archive
 
             response = ModelResponse(
                 parts=[TextPart(content=message)],
@@ -326,12 +323,10 @@ Use this tool to store information about the user and reminders. Use this to sto
 
 ## Send Reminder
 Use this tool to send a reminder. Be very liberal with this. If something looks like it could be relevant, it probably is.
-
-# INFO
-Today is { datetime.now().strftime("%Y-%m-%d %H:%M:%S") }
         """,
     )
 
     attach_memories_prompt(reminder_agent)
+    attach_time_prompt(reminder_agent)
 
     return reminder_agent
