@@ -28,6 +28,7 @@ Use this tool to store information about the user. Extract and summarize interes
 Use this tool to update an existing memory by its ID. Provide the memory ID and the new content to replace the existing memory.""",
 }
 
+
 def get_time_prompt() -> str:
     now = datetime.now()
     return f"""
@@ -37,8 +38,8 @@ The current time is {now.strftime("%H:%M:%S")} (European)"""
 
 
 def get_memories_prompt() -> str:
-        mdmemories = storage.get_memories(True)
-        return f"""
+    mdmemories = storage.get_memories(True)
+    return f"""
 # Memories
 Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
 !! IMPORTANT!
@@ -197,7 +198,6 @@ If you see instances of this, split the memories. Make sure to include the date.
 """,
     )
 
-
     return aggregator_agent
 
 
@@ -329,6 +329,5 @@ Use this tool to send a reminder. Be very liberal with this. If something looks 
 {get_time_prompt()}
 """,
     )
-
 
     return reminder_agent

@@ -8,6 +8,8 @@ def main():
     import logfire
     import os
     import dotenv
+    import time
+    import asyncio
 
     dotenv.load_dotenv()
 
@@ -27,14 +29,11 @@ def main():
 
     # Periodically run the deduplicator agent in a background thread.
     def run_periodic_maintenance(interval_hours: int = 10) -> None:
-        import time
-        import asyncio
         from zeno.agents import (
             build_deduplicator_agent,
             build_aggregator_agent,
             build_splitter_agent,
             build_garbage_collector_agent,
-            build_reminder_agent,
         )
         import logging
 
@@ -64,23 +63,35 @@ def main():
                 gc = build_garbage_collector_agent()
                 resp = asyncio.run(gc.run("Garbage collect old/unneeded memories"))
                 logger.info("Garbage collector run complete: %s", getattr(resp, "output", "(no output)"))
-                # 5) Reminder agent (run every 15 minutes)
-                reminder = build_reminder_agent()
-                try:
-                    # run the reminder agent quickly to check for due reminders
-                    logfire.info('Running reminder agent')
-                    resp = asyncio.run(reminder.run("Check for due reminders", message_history=None))
-                    logger.info("Reminder agent run complete: %s", getattr(resp, "output", "(no output)"))
-                except Exception:
-                    logger.exception("Reminder agent failed")
-                    logfire.info('Shite. Reminder agent failed')
             except Exception:
                 logger.exception("Periodic maintenance failed")
 
             time.sleep(interval_hours * 3600)
 
-    dedup_thread = threading.Thread(target=run_periodic_maintenance, daemon=True)
-    dedup_thread.start()
+
+    # Separate reminder loop runs more frequently (every 15 minutes)
+    def run_reminder_loop(interval_minutes: int = 15) -> None:
+        from zeno.agents import build_reminder_agent
+        import logging
+
+        logger = logging.getLogger("zeno.reminder")
+
+        while True:
+            try:
+                reminder = build_reminder_agent()
+                logfire.info('Running reminder agent')
+                resp = asyncio.run(reminder.run("Check for due reminders", message_history=None))
+                logger.info("Reminder agent run complete: %s", getattr(resp, "output", "(no output)"))
+            except Exception:
+                logger.exception("Reminder agent failed")
+                logfire.info('Reminder agent failed')
+
+            time.sleep(interval_minutes * 60)
+
+    gardening_thread = threading.Thread(target=run_periodic_maintenance, daemon=True)
+    gardening_thread.start()
+    reminder_thread = threading.Thread(target=run_reminder_loop, daemon=True)
+    reminder_thread.start()
 
     run_bot()
 
