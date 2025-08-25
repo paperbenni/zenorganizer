@@ -28,18 +28,13 @@ Use this tool to store information about the user. Extract and summarize interes
 Use this tool to update an existing memory by its ID. Provide the memory ID and the new content to replace the existing memory.""",
 }
 
-
-def attach_time_prompt(agent: Agent) -> None:
-    @agent.system_prompt
-    def _add_time(ctx: RunContext) -> str:
+def get_time_prompt() -> str:
         return f"""
 # INFO
 Today is { datetime.now().strftime("%Y-%m-%d") }"""
 
 
-def attach_memories_prompt(agent: Agent) -> None:
-    @agent.system_prompt
-    def _memories(ctx: RunContext) -> str:
+def get_memories_prompt() -> str:
         return f"""
 # Memories
 Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
@@ -135,11 +130,12 @@ The chat history is reset frequently, so anything long lived should be a memory.
 You can also mark memories which should be forgotten by inserting a memory stating that specific information is no longer important. A cleaning agent will then occasionally remove it.
 
 # Tools
-{tooldescriptions['store']}""",
-    )
+{tooldescriptions['store']}
 
-    attach_memories_prompt(chatagent)
-    attach_time_prompt(chatagent)
+{get_memories_prompt()}
+{get_time_prompt()}
+""",
+    )
 
     return chatagent
 
@@ -152,10 +148,10 @@ def build_splitter_agent() -> Agent:
 
 # Tasks
 ## Split overaggregated memories
-Memories can only be deleted in their entirety. If a memory states that part of an aggregated memory should be forgotten, then split that part into a separate memory. 
-If a memory contains information about something no longer relevant, like a reminder sent in the far past, then split that into a separate memory, and remove that information from the original memory. 
-Time sensitive information should always be kept separate from information that is not time sensitive. 
-Do not include logs about what you changed inside the memory content. 
+Memories can only be deleted in their entirety. If a memory states that part of an aggregated memory should be forgotten, then split that part into a separate memory.
+If a memory contains information about something no longer relevant, like a reminder sent in the far past, then split that into a separate memory, and remove that information from the original memory.
+Time sensitive information should always be kept separate from information that is not time sensitive.
+Do not include logs about what you changed inside the memory content.
 
 # Tools
 
@@ -163,11 +159,12 @@ Do not include logs about what you changed inside the memory content.
 {tooldescriptions['store']}
 {tooldescriptions['update']}
 
+{get_memories_prompt()}
+{get_time_prompt()}
+
+
 """,
     )
-
-    attach_memories_prompt(splitter_agent)
-    attach_time_prompt(splitter_agent)
 
     return splitter_agent
 
@@ -180,22 +177,23 @@ def build_aggregator_agent() -> Agent:
 
 ##Aggregate memories
 If there are multiple memories which only make sense when put together, then delete them and add a new memory with the information from all of them.
-For example a memory containing a list of things, and another memory adding things to that list should be aggregated into a single memory containing the entire list. 
-Examples of this include memories with missing information and another memory providing that information. 
-Make sure memories stay with a single responsibility, similar to programming. It is okay not to aggregate anything if that is what seems best. 
-Make sure that if the original memories were time sensitive to include the date the memories pertain to in the content. 
-Keep in mind aggregating a memory changes its creation date. If a memory is time sensitive, include the full date it pertains to in the memory content. 
-IMPORTANT: Keep information which should be deleted separately separate. Examples of this include reminders about information, and the information itself. 
-If you see instances of this, split the memories. Make sure to include the date. 
+For example a memory containing a list of things, and another memory adding things to that list should be aggregated into a single memory containing the entire list.
+Examples of this include memories with missing information and another memory providing that information.
+Make sure memories stay with a single responsibility, similar to programming. It is okay not to aggregate anything if that is what seems best.
+Make sure that if the original memories were time sensitive to include the date the memories pertain to in the content.
+Keep in mind aggregating a memory changes its creation date. If a memory is time sensitive, include the full date it pertains to in the memory content.
+IMPORTANT: Keep information which should be deleted separately separate. Examples of this include reminders about information, and the information itself.
+If you see instances of this, split the memories. Make sure to include the date.
 
 # Tools
 {tooldescriptions['store']}
 {tooldescriptions['delete']}
+
+{get_memories_prompt()}
+{get_time_prompt()}
 """,
     )
 
-    attach_memories_prompt(aggregator_agent)
-    attach_time_prompt(aggregator_agent)
 
     return aggregator_agent
 
@@ -215,11 +213,10 @@ If there are memories which contradict each other, then assume the newest one is
 # Tools
 {tooldescriptions['delete']}
 
+{get_memories_prompt()}
+{get_time_prompt()}
 """,
     )
-
-    attach_memories_prompt(dedup_agent)
-    attach_time_prompt(dedup_agent)
 
     return dedup_agent
 
@@ -238,11 +235,12 @@ If a memory itself states it should be deleted, or if the memory and its deletio
 BE SURE NOT TO REMOVE RECURRING REMINDERS.
 
 # Tools
-{tooldescriptions['delete']}""",
-    )
+{tooldescriptions['delete']}
 
-    attach_memories_prompt(garbage_collector_agent)
-    attach_time_prompt(garbage_collector_agent)
+{get_memories_prompt()}
+{get_time_prompt()}
+""",
+    )
 
     return garbage_collector_agent
 
@@ -308,9 +306,9 @@ def build_reminder_agent() -> Agent:
         model=get_model(),
         toolsets=[FunctionToolset(tools=[send_reminder, store_memory])],
         system_prompt=f"""# RULES
-You are an agent tasked with sending a user reminders. You are given a list of memories and the current time. If a memory looks like the user should be reminded of, send the user a reminder with. Also record a new memory marking that the reminder has been sent, so that you will not remind the user more than they requested. 
-Pay attention to when a memory is relevant. You know the current date and time, only send reminders for memories which are currently relevant and time sensitive. 
-For example if a memory says to remind the user of something daily, send a reminder and also record a memory saying that on the current day, the reminder has already been sent. 
+You are an agent tasked with sending a user reminders. You are given a list of memories and the current time. If a memory looks like the user should be reminded of, send the user a reminder with. Also record a new memory marking that the reminder has been sent, so that you will not remind the user more than they requested.
+Pay attention to when a memory is relevant. You know the current date and time, only send reminders for memories which are currently relevant and time sensitive.
+For example if a memory says to remind the user of something daily, send a reminder and also record a memory saying that on the current day, the reminder has already been sent.
 If the reminder is a one-time thing, then send the reminder and save a memory saying the reminder can be deleted. Make sure it is clear which reminder the new memory is referring to, include the entire reminder memory if necessary
 
 Do not send any reminders or do anything if no reminders are relevant
@@ -323,10 +321,11 @@ Use this tool to store information about the user and reminders. Use this to sto
 
 ## Send Reminder
 Use this tool to send a reminder. Be very liberal with this. If something looks like it could be relevant, it probably is.
-        """,
+
+{get_memories_prompt()}
+{get_time_prompt()}
+""",
     )
 
-    attach_memories_prompt(reminder_agent)
-    attach_time_prompt(reminder_agent)
 
     return reminder_agent
