@@ -2,6 +2,8 @@ import os
 from datetime import datetime
 from typing import Callable
 
+import pytz
+
 import dotenv
 import logfire
 from pydantic_ai import Agent, RunContext
@@ -30,7 +32,7 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 
 
 def get_time_prompt() -> str:
-    now = datetime.now()
+    now = datetime.now(pytz.timezone('Europe/Berlin'))
     return f"""
 # INFO
 Today is {now.strftime("%Y-%m-%d")}
@@ -97,7 +99,7 @@ async def store_memory(ctx: RunContext, content: str):
     from .models import Memory
     from .storage import engine
 
-    memory = Memory(content=content, created_time=datetime.now())
+    memory = Memory(content=content, created_time=datetime.now(pytz.timezone('Europe/Berlin')))
     with Session(engine) as session:  # type: ignore
         session.add(memory)  # type: ignore
         session.commit()  # type: ignore
@@ -120,7 +122,7 @@ async def update_memory(ctx: RunContext, id: int, content: str):
         memory = session.get(Memory, id)  # type: ignore
         if memory:
             memory.content = content  # type: ignore
-            memory.created_time = datetime.now()  # update timestamp to now
+            memory.created_time = datetime.now(pytz.timezone('Europe/Berlin'))  # update timestamp to now
             session.add(memory)  # type: ignore
             session.commit()  # type: ignore
 
@@ -302,7 +304,7 @@ def build_reminder_agent() -> Agent:
                 parts=[TextPart(content=message)],
                 usage=RequestUsage(),
                 model_name=ctx.model.model_name,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(pytz.timezone('Europe/Berlin')),
             )
             # serialize to bytes the same way archives are stored
             json_bytes = ModelMessagesTypeAdapter.dump_json([response])

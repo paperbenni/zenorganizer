@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List
 
+import pytz
+
 from sqlmodel import Session, create_engine, select
 
 from .models import Memory, MessageArchive
@@ -60,7 +62,7 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
 
 
 def store_message_archive(content: bytes) -> None:
-    archive = MessageArchive(content=content, created_time=datetime.now())
+    archive = MessageArchive(content=content, created_time=datetime.now(pytz.timezone('Europe/Berlin')))
     with Session(engine) as session:  # type: ignore
         session.add(archive)  # type: ignore
         session.commit()  # type: ignore
