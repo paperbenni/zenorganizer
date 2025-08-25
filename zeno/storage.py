@@ -37,32 +37,22 @@ def get_memories(show_id: bool) -> str:
 from pydantic_ai.messages import ToolReturnPart
 
 def get_old_messages(limit: int) -> List[ModelMessage]:
-    # Collect messages across archives until we've reached the total `limit` messages.
     messages: list[ModelMessage] = []
-    batch = 10
-    offset = 0
     with Session(engine) as session:  # type: ignore
-        while True:
-            archives = session.exec(
-                select(MessageArchive)
-                .order_by(MessageArchive.created_time.desc())
-                .limit(batch)
-                .offset(offset)
-            ).all()
-            if not archives:
-                break
+        archives = session.exec(
+            select(MessageArchive)
+            .order_by(MessageArchive.created_time.desc())
+            .limit(limit)
+        ).all()
 
-            for archive in archives:
-                msgs = ModelMessagesTypeAdapter.validate_json(archive.content)
-                messages.extend(msgs)
-
+        for archive in archives:
+            msgs = ModelMessagesTypeAdapter.validate_json(archive.content)
+            messages.extend(reversed(msgs))
             if len(messages) >= limit:
                 break
 
-            offset += batch
-
     # We collected newest-first; return messages in chronological order (oldest->newest)
-    messages = list(reversed(messages))
+    messages = list(messages)
     return messages
 
 
