@@ -22,6 +22,7 @@ def main():
             build_aggregator_agent,
             build_splitter_agent,
             build_garbage_collector_agent,
+            build_reminder_agent,
         )
         import logging
 
@@ -50,7 +51,14 @@ def main():
                 gc = build_garbage_collector_agent()
                 resp = asyncio.run(gc.run("Garbage collect old/unneeded memories"))
                 logger.info("Garbage collector run complete: %s", getattr(resp, "output", "(no output)"))
-
+                # 5) Reminder agent (run every 15 minutes)
+                reminder = build_reminder_agent()
+                try:
+                    # run the reminder agent quickly to check for due reminders
+                    resp = asyncio.run(reminder.run("Check for due reminders", message_history=None))
+                    logger.info("Reminder agent run complete: %s", getattr(resp, "output", "(no output)"))
+                except Exception:
+                    logger.exception("Reminder agent failed")
             except Exception:
                 logger.exception("Periodic maintenance failed")
 
