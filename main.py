@@ -16,7 +16,7 @@ def main():
     logfire_token = os.environ["LOGFIRE_TOKEN"]
     if logfire_token:
         print("Logging to LogFire!!!")
-        logfire.configure(token=logfire_token)
+        logfire.configure(token=logfire_token, scrubbing=False)
         logfire.info('Hello, {place}!', place='World')
         logfire.instrument_pydantic_ai()
 
