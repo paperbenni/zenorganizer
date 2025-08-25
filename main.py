@@ -8,7 +8,7 @@ def main():
 
     def run_flask():
         # Use Flask's built-in server for dev usage.
-        flask_app.run(host="0.0.0.0", port=8000)
+        flask_app.run(host="0.0.0.0", port=8001)
 
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
