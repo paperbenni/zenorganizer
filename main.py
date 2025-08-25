@@ -44,6 +44,7 @@ def main():
             # initial short sleep to stagger startup
             time.sleep(600)
             try:
+                logfire.info('Running gardening stuff')
                 # 1) Deduplicate
                 dedup_agent = build_deduplicator_agent()
                 resp = asyncio.run(dedup_agent.run("Deduplicate memories"))
@@ -67,10 +68,12 @@ def main():
                 reminder = build_reminder_agent()
                 try:
                     # run the reminder agent quickly to check for due reminders
+                    logfire.info('Running reminder agent')
                     resp = asyncio.run(reminder.run("Check for due reminders", message_history=None))
                     logger.info("Reminder agent run complete: %s", getattr(resp, "output", "(no output)"))
                 except Exception:
                     logger.exception("Reminder agent failed")
+                    logfire.info('Shite. Reminder agent failed')
             except Exception:
                 logger.exception("Periodic maintenance failed")
 
