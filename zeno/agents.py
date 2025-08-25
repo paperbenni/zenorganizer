@@ -39,7 +39,7 @@ def get_time_prompt() -> str:
     now = get_current_time()
     return f"""
 # INFO
-Today is {now.strftime("%Y-%m-%d")}
+Today is {now.strftime("%Y-%m-%d")} ({now.strftime("%A")})
 The current time is {now.strftime("%H:%M:%S")} (European)
 """
 
