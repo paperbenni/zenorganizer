@@ -23,3 +23,5 @@ Web interface
 User management
 - Make memories user specific
 - Do not hardcode user ids
+
+Logfire thingy

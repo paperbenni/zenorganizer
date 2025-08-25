@@ -5,6 +5,14 @@ def main():
     import threading
     from zeno.telegram_bot import run_bot
     from zeno.api_flask import app as flask_app
+    import logfire
+    import os
+
+    logfire_token = os.environ.get("LOGFIRE_TOKEN")
+    if logfire_token:
+        logfire.configure(token=logfire_token)
+        logfire.info('Hello, {place}!', place='World')
+        logfire.instrument_pydantic_ai()
 
     def run_flask():
         # Use Flask's built-in server for dev usage.
