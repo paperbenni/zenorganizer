@@ -23,24 +23,29 @@ def deduplicate():
 
 @app.route("/old_messages")
 def old_messages():
-    # Return the last `limit` messages (default 20) as JSON-serializable dicts.
+    # Return the last `limit` messages (default 20) as a human-readable Markdown-like representation.
     try:
         limit = int(request.args.get("limit", "20"))
     except ValueError:
         limit = 20
 
     msgs = storage.get_old_messages(limit)
-    # Convert messages to a simple representation
-    out = []
-    for m in msgs:
-        out.append(
-            {
-                "parts": [type(p).__name__ for p in m.parts],
-                "raw": getattr(m, "json", lambda: str(m))(),
-            }
-        )
-
-    return jsonify({"count": len(out), "messages": out})
+    md = "# Old Messages\n\n"
+    for i, m in enumerate(msgs, 1):
+        md += f"## Message {i}\n"
+        md += f"**Parts:** {', '.join(type(p).__name__ for p in m.parts)}\n\n"
+        for j, p in enumerate(m.parts, 1):
+            md += f"### Part {j}: {type(p).__name__}\n"
+            # Try to get a human-readable content for each part
+            content = getattr(p, "content", None)
+            if content is not None:
+                md += f"{content}\n\n"
+            else:
+                # fallback to str
+                md += f"{str(p)}\n\n"
+        md += "---\n"
+    return Response(md, mimetype="text/markdown")
+   
 
 
 if __name__ == "__main__":

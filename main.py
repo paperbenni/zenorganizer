@@ -77,6 +77,7 @@ def main():
         logger = logging.getLogger("zeno.reminder")
 
         while True:
+            time.sleep(interval_minutes * 60)
             try:
                 reminder = build_reminder_agent()
                 logfire.info('Running reminder agent')
@@ -86,7 +87,6 @@ def main():
                 logger.exception("Reminder agent failed")
                 logfire.info('Reminder agent failed')
 
-            time.sleep(interval_minutes * 60)
 
     gardening_thread = threading.Thread(target=run_periodic_maintenance, daemon=True)
     gardening_thread.start()
