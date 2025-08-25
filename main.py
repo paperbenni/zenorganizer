@@ -1,21 +1,19 @@
 def main():
-    # Entry point for the package — run the telegram bot.
-    # Run both the Telegram bot and a FastAPI app concurrently using asyncio.
-    import asyncio
+    # Entry point for the package — run the telegram bot and a Flask app
+    # concurrently in the same process. Start the Flask dev server in a
+    # background thread so both the API and the bot run together.
+    import threading
     from zeno.telegram_bot import run_bot
-    from zeno.api import app as fastapi_app
-    import uvicorn
+    from zeno.api_flask import app as flask_app
 
-    async def run_both():
-        bot_task = asyncio.to_thread(run_bot)
-        api_config = uvicorn.Config(fastapi_app, host="0.0.0.0", port=8000, log_level="info")
-        server = uvicorn.Server(api_config)
-        api_task = asyncio.create_task(server.serve())
-        await bot_task
-        # Shutdown server when bot exits
-        api_task.cancel()
+    def run_flask():
+        # Use Flask's built-in server for dev usage.
+        flask_app.run(host="0.0.0.0", port=8000)
 
-    asyncio.run(run_both())
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
+    run_bot()
 
 
 if __name__ == "__main__":
