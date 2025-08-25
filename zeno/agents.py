@@ -49,7 +49,6 @@ Here are the Memories in Markdown format:
 **end of memories**"""
 
 
-
 def get_model() -> OpenAIModel:
     return OpenAIModel(
         os.environ["MODEL_NAME"],
