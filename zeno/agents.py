@@ -31,8 +31,13 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 }
 
 
+def get_current_time() -> datetime:
+    """Get current datetime in Europe/Berlin timezone."""
+    return datetime.now(pytz.timezone('Europe/Berlin'))
+
+
 def get_time_prompt() -> str:
-    now = datetime.now(pytz.timezone('Europe/Berlin'))
+    now = get_current_time()
     return f"""
 # INFO
 Today is {now.strftime("%Y-%m-%d")}
@@ -99,7 +104,7 @@ async def store_memory(ctx: RunContext, content: str):
     from .models import Memory
     from .storage import engine
 
-    memory = Memory(content=content, created_time=datetime.now(pytz.timezone('Europe/Berlin')))
+    memory = Memory(content=content, created_time=get_current_time())
     with Session(engine) as session:  # type: ignore
         session.add(memory)  # type: ignore
         session.commit()  # type: ignore
@@ -122,7 +127,7 @@ async def update_memory(ctx: RunContext, id: int, content: str):
         memory = session.get(Memory, id)  # type: ignore
         if memory:
             memory.content = content  # type: ignore
-            memory.created_time = datetime.now(pytz.timezone('Europe/Berlin'))  # update timestamp to now
+            memory.created_time = get_current_time()  # update timestamp to now
             session.add(memory)  # type: ignore
             session.commit()  # type: ignore
 
@@ -294,9 +299,9 @@ def build_reminder_agent() -> Agent:
             from pydantic_ai.messages import (
                 ModelMessagesTypeAdapter,
                 ModelResponse,
-                RequestUsage,
                 TextPart,
             )
+            from pydantic_ai.usage import RequestUsage
 
             from .storage import store_message_archive
 
@@ -304,7 +309,7 @@ def build_reminder_agent() -> Agent:
                 parts=[TextPart(content=message)],
                 usage=RequestUsage(),
                 model_name=ctx.model.model_name,
-                timestamp=datetime.now(pytz.timezone('Europe/Berlin')),
+                timestamp=get_current_time(),
             )
             # serialize to bytes the same way archives are stored
             json_bytes = ModelMessagesTypeAdapter.dump_json([response])

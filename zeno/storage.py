@@ -3,10 +3,15 @@ from typing import List
 
 import pytz
 
-from sqlmodel import Session, create_engine, select
+from sqlmodel import Session, create_engine, select, desc
 
 from .models import Memory, MessageArchive
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+
+
+def get_current_time() -> datetime:
+    """Get current datetime in Europe/Berlin timezone."""
+    return datetime.now(pytz.timezone('Europe/Berlin'))
 
 
 engine = create_engine("sqlite:///test.db", echo=True)
@@ -44,7 +49,7 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
     with Session(engine) as session:  # type: ignore
         archives = session.exec(
             select(MessageArchive)
-            .order_by(MessageArchive.created_time.desc())
+            .order_by(desc(MessageArchive.created_time))
             .limit(limit)
         ).all()
 
@@ -62,7 +67,8 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
 
 
 def store_message_archive(content: bytes) -> None:
-    archive = MessageArchive(content=content, created_time=datetime.now(pytz.timezone('Europe/Berlin')))
+    from .agents import get_current_time
+    archive = MessageArchive(content=content, created_time=get_current_time())
     with Session(engine) as session:  # type: ignore
         session.add(archive)  # type: ignore
         session.commit()  # type: ignore

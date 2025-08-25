@@ -3,6 +3,8 @@ from datetime import datetime
 import pytz
 from sqlmodel import Field, SQLModel
 
+from .storage import get_current_time
+
 
 class Memory(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -13,4 +15,4 @@ class Memory(SQLModel, table=True):
 class MessageArchive(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     content: bytes
-    created_time: datetime = Field(default_factory=lambda: datetime.now(pytz.timezone('Europe/Berlin')))
+    created_time: datetime = Field(default_factory=get_current_time)
