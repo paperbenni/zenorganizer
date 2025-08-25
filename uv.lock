@@ -2899,6 +2899,7 @@ dependencies = [
     { name = "pyrefly" },
     { name = "python-telegram-bot" },
     { name = "sqlmodel" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata]
@@ -2908,6 +2909,7 @@ requires-dist = [
     { name = "pyrefly", specifier = ">=0.29.2" },
     { name = "python-telegram-bot", specifier = ">=22.3" },
     { name = "sqlmodel", specifier = ">=0.0.24" },
+    { name = "uvicorn", specifier = ">=0.35.0" },
 ]
 
 [[package]]
