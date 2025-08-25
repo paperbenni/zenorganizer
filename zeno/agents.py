@@ -29,12 +29,15 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 }
 
 def get_time_prompt() -> str:
-        return f"""
+    now = datetime.now()
+    return f"""
 # INFO
-Today is { datetime.now().strftime("%Y-%m-%d") }"""
+Today is {now.strftime("%Y-%m-%d")}
+The current time is {now.strftime("%H:%M:%S")} (European)"""
 
 
 def get_memories_prompt() -> str:
+        mdmemories = storage.get_memories(True)
         return f"""
 # Memories
 Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
@@ -44,7 +47,7 @@ Also consider the date and time that a memory was shared in order to respond wit
 
 Here are the Memories in Markdown format:
 
-{storage.get_memories(True)}
+{mdmemories}
 
 **end of memories**"""
 
