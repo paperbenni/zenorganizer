@@ -4,6 +4,7 @@ Each function is an async callable intended for use by AI agents. Docstrings
 contain only the minimal contract information agents need: a short
 description, parameter names and types, and the return type.
 """
+
 import os
 from typing import Optional
 
@@ -100,7 +101,8 @@ async def send_reminder(ctx: RunContext, message: str) -> None:
     response = ModelResponse(
         parts=[TextPart(content=message)],
         usage=RequestUsage(),
-        model_name=getattr(ctx, "model", None) and getattr(ctx.model, "model_name", "unknown"),
+        model_name=getattr(ctx, "model", None)
+        and getattr(ctx.model, "model_name", "unknown"),
         timestamp=get_current_time(),
     )
     json_bytes = ModelMessagesTypeAdapter.dump_json([response])

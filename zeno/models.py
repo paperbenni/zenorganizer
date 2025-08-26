@@ -1,17 +1,24 @@
-from datetime import datetime
-
-from sqlmodel import Field, SQLModel
+from sqlalchemy import Column, Integer, String, DateTime, LargeBinary
+from sqlalchemy.orm import DeclarativeBase
 
 from .utils import get_current_time
 
 
-class Memory(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    content: str
-    created_time: datetime
+class Base(DeclarativeBase):
+    pass
 
 
-class MessageArchive(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    content: bytes
-    created_time: datetime = Field(default_factory=get_current_time)
+class Memory(Base):
+    __tablename__ = "memory"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(String, nullable=False)
+    created_time = Column(DateTime, nullable=False)
+
+
+class MessageArchive(Base):
+    __tablename__ = "message_archive"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(LargeBinary, nullable=False)
+    created_time = Column(DateTime, nullable=False, default=get_current_time)

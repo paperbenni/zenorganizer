@@ -65,8 +65,6 @@ def get_openai_model() -> OpenAIModel:
     return openai_model
 
 
-
-
 async def build_chat_agent() -> Agent:
     mdmem = await get_memories_prompt()
 
