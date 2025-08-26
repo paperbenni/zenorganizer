@@ -60,6 +60,13 @@ def run_bot() -> None:
     import asyncio as _asyncio
 
     _asyncio.run(init_db())
+
+    # Ensure main thread has an event loop for libraries that call get_event_loop()
+    try:
+        _asyncio.get_running_loop()
+    except RuntimeError:
+        _asyncio.set_event_loop(_asyncio.new_event_loop())
+
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment")
