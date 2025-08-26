@@ -4,6 +4,7 @@ format:
 
 check:
     uvx ruff check
+    uvx ty check
 
 run:
     uv run main.py

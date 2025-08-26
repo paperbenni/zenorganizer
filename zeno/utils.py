@@ -1,8 +1,7 @@
 from datetime import datetime
-
-import pytz
+from zoneinfo import ZoneInfo
 
 
 def get_current_time() -> datetime:
     """Get current datetime in Europe/Berlin timezone."""
-    return datetime.now(pytz.timezone("Europe/Berlin"))
+    return datetime.now(tz=ZoneInfo("Europe/Berlin"))
