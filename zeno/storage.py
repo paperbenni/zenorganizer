@@ -34,8 +34,6 @@ def get_memories(show_id: bool) -> str:
     return output
 
 
-
-
 def get_old_messages(limit: int) -> List[ModelMessage]:
     messages: list[ModelMessage] = []
     with Session(engine) as session:  # type: ignore
@@ -60,6 +58,7 @@ def get_old_messages(limit: int) -> List[ModelMessage]:
 
 def store_message_archive(content: bytes) -> None:
     from .agents import get_current_time
+
     archive = MessageArchive(content=content, created_time=get_current_time())
     with Session(engine) as session:  # type: ignore
         session.add(archive)  # type: ignore

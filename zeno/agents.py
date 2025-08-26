@@ -27,9 +27,6 @@ Use this tool to update an existing memory by its ID. Provide the memory ID and 
 }
 
 
-
-
-
 def get_time_prompt() -> str:
     now = get_current_time()
     return f"""
@@ -54,16 +51,18 @@ Here are the Memories in Markdown format:
 
 **end of memories**"""
 
+
 dotenv.load_dotenv()
+
 
 def get_openai_model() -> OpenAIModel:
     openai_model = OpenAIModel(
-            os.environ["MODEL_NAME"],
-            provider=OpenAIProvider(
-                api_key=os.environ["OPENAI_API_KEY"],
-                base_url=os.environ["OPENAI_BASE_URL"],
-            ),
-        )
+        os.environ["MODEL_NAME"],
+        provider=OpenAIProvider(
+            api_key=os.environ["OPENAI_API_KEY"],
+            base_url=os.environ["OPENAI_BASE_URL"],
+        ),
+    )
     return openai_model
 
 
@@ -124,6 +123,7 @@ async def update_memory(ctx: RunContext, id: int, content: str):
             session.add(memory)  # type: ignore
             session.commit()  # type: ignore
 
+
 def build_chat_agent() -> Agent:
     def get_chat_instructions() -> str:
         return f"""# RULES
@@ -135,7 +135,7 @@ The chat history is reset frequently, so anything long lived should be a memory.
 You can also mark memories which should be forgotten by inserting a memory stating that specific information is no longer important. A cleaning agent will then occasionally remove it.
 
 # Tools
-{tooldescriptions['store']}
+{tooldescriptions["store"]}
 
 {get_memories_prompt()}
 {get_time_prompt()}
@@ -165,9 +165,9 @@ Do not include logs about what you changed inside the memory content.
 
 # Tools
 
-{tooldescriptions['delete']}
-{tooldescriptions['store']}
-{tooldescriptions['update']}
+{tooldescriptions["delete"]}
+{tooldescriptions["store"]}
+{tooldescriptions["update"]}
 
 {get_memories_prompt()}
 {get_time_prompt()}
@@ -196,8 +196,8 @@ IMPORTANT: Keep information which should be deleted separately separate. Example
 If you see instances of this, split the memories. Make sure to include the date.
 
 # Tools
-{tooldescriptions['store']}
-{tooldescriptions['delete']}
+{tooldescriptions["store"]}
+{tooldescriptions["delete"]}
 
 {get_memories_prompt()}
 {get_time_prompt()}
@@ -220,7 +220,7 @@ If there are duplicate memories, memorizing the same thing, remove some of them 
 If there are memories which contradict each other, then assume the newest one is correct and remove the older contradicting ones.
 
 # Tools
-{tooldescriptions['delete']}
+{tooldescriptions["delete"]}
 
 {get_memories_prompt()}
 {get_time_prompt()}
@@ -231,7 +231,6 @@ If there are memories which contradict each other, then assume the newest one is
 
 
 def build_garbage_collector_agent() -> Agent:
-
     garbage_collector_agent = Agent(
         model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
@@ -244,7 +243,7 @@ If a memory itself states it should be deleted, or if the memory and its deletio
 BE SURE NOT TO REMOVE RECURRING REMINDERS.
 
 # Tools
-{tooldescriptions['delete']}
+{tooldescriptions["delete"]}
 
 {get_memories_prompt()}
 {get_time_prompt()}
@@ -273,7 +272,6 @@ def build_reminder_agent() -> Agent:
         # We can't easily access the live Application here; instead, use bot token and
         # python-telegram-bot's simple API to send a message.
         from telegram import Bot
-
 
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         if not token:

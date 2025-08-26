@@ -17,7 +17,7 @@ def main():
     if logfire_token:
         print("Logging to LogFire!!!")
         logfire.configure(token=logfire_token, scrubbing=False)
-        logfire.info('Hello, {place}!', place='World')
+        logfire.info("Hello, {place}!", place="World")
         logfire.instrument_pydantic_ai()
 
     def run_flask():
@@ -43,31 +43,41 @@ def main():
             # initial short sleep to stagger startup
             time.sleep(600)
             try:
-                logfire.info('Running gardening stuff')
+                logfire.info("Running gardening stuff")
                 # 1) Deduplicate
                 dedup_agent = build_deduplicator_agent()
                 resp = asyncio.run(dedup_agent.run("Deduplicate memories"))
-                logger.info("Deduplicator run complete: %s", getattr(resp, "output", "(no output)"))
+                logger.info(
+                    "Deduplicator run complete: %s",
+                    getattr(resp, "output", "(no output)"),
+                )
 
                 # 2) Aggregate
                 aggregator = build_aggregator_agent()
                 resp = asyncio.run(aggregator.run("Aggregate memories"))
-                logger.info("Aggregator run complete: %s", getattr(resp, "output", "(no output)"))
+                logger.info(
+                    "Aggregator run complete: %s",
+                    getattr(resp, "output", "(no output)"),
+                )
 
                 # 3) Splitter
                 splitter = build_splitter_agent()
                 resp = asyncio.run(splitter.run("Split overaggregated memories"))
-                logger.info("Splitter run complete: %s", getattr(resp, "output", "(no output)"))
+                logger.info(
+                    "Splitter run complete: %s", getattr(resp, "output", "(no output)")
+                )
 
                 # 4) Garbage collector
                 gc = build_garbage_collector_agent()
                 resp = asyncio.run(gc.run("Garbage collect old/unneeded memories"))
-                logger.info("Garbage collector run complete: %s", getattr(resp, "output", "(no output)"))
+                logger.info(
+                    "Garbage collector run complete: %s",
+                    getattr(resp, "output", "(no output)"),
+                )
             except Exception:
                 logger.exception("Periodic maintenance failed")
 
             time.sleep(interval_hours * 3600)
-
 
     # Separate reminder loop runs more frequently (every 15 minutes)
     def run_reminder_loop(interval_minutes: int = 15) -> None:
@@ -80,13 +90,17 @@ def main():
             time.sleep(interval_minutes * 60)
             try:
                 reminder = build_reminder_agent()
-                logfire.info('Running reminder agent')
-                resp = asyncio.run(reminder.run("Check for due reminders", message_history=None))
-                logger.info("Reminder agent run complete: %s", getattr(resp, "output", "(no output)"))
+                logfire.info("Running reminder agent")
+                resp = asyncio.run(
+                    reminder.run("Check for due reminders", message_history=None)
+                )
+                logger.info(
+                    "Reminder agent run complete: %s",
+                    getattr(resp, "output", "(no output)"),
+                )
             except Exception:
                 logger.exception("Reminder agent failed")
-                logfire.info('Reminder agent failed')
-
+                logfire.info("Reminder agent failed")
 
     gardening_thread = threading.Thread(target=run_periodic_maintenance, daemon=True)
     gardening_thread.start()

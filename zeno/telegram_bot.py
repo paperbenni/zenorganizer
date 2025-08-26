@@ -42,6 +42,7 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     from .agents import build_chat_agent
+
     chatagent = build_chat_agent()
     response = await chatagent.run(message.text, message_history=get_old_messages(10))
     messages = response.new_messages_json()
