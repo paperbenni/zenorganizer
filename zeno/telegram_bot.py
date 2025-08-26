@@ -24,7 +24,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat is None:
         return
     await context.bot.send_message(chat_id=chat.id, text="Hello tere")
-    logfire.info("Received /start from %s", chat.id)
+    logfire.info(f"Received /start from {chat.id}")
 
 
 async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -44,20 +44,20 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=chat.id, text="You are not authorized to use this bot."
         )
-        logfire.info("Unauthorized access attempt from user %s", message.from_user.id)
+        logfire.info(f"Unauthorized access attempt from user {message.from_user.id}")
         return
 
     from .agents import build_chat_agent
 
     chatagent = await build_chat_agent()
-    logfire.info("Running chat agent for user %s", message.from_user.id)
+    logfire.info(f"Running chat agent for user {message.from_user.id}")
     history = await get_old_messages(10)
     response = await chatagent.run(message.text, message_history=history)
     messages = response.new_messages_json()
     # use storage helper to persist the message archive
     await store_message_archive(messages)
     await context.bot.send_message(chat_id=chat.id, text=response.output)
-    logfire.info("Responded to user %s via bot", message.from_user.id)
+    logfire.info(f"Responded to user {message.from_user.id} via bot")
 
 
 def run_bot() -> None:

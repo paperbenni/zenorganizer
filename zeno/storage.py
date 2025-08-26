@@ -14,7 +14,25 @@ AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_co
 
 
 async def init_db() -> None:
-    """Create database tables if they do not exist."""
+    """Create database tables if they do not exist.
+
+    Ensure the directory for the SQLite database file exists before creating
+    tables so that the engine can create the DB file successfully.
+    """
+    # If using a sqlite URL, extract the file path and ensure its parent dir exists
+    if DATABASE_URL.startswith("sqlite") and "///" in DATABASE_URL:
+        try:
+            db_path = DATABASE_URL.split("///", 1)[1]
+            db_dir = os.path.dirname(db_path)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
+        except Exception:
+            # fall back to attempting to create a generic ./data directory
+            try:
+                os.makedirs("./data", exist_ok=True)
+            except Exception:
+                pass
+
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
