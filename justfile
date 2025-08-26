@@ -11,3 +11,6 @@ run:
 deploy:
     git pull
     just run
+
+e:
+    uv run nvim .
