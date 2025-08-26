@@ -4,18 +4,18 @@ Each function is an async callable intended for use by AI agents. Docstrings
 contain only the minimal contract information agents need: a short
 description, parameter names and types, and the return type.
 """
-from typing import Optional
 import os
+from typing import Optional
 
 from pydantic_ai import RunContext
-from telegram import Bot
-
-from .storage import AsyncSessionLocal, store_message_archive
-from .models import Memory
-from .utils import get_current_time
 from pydantic_ai.messages import ModelMessagesTypeAdapter, ModelResponse, TextPart
 from pydantic_ai.usage import RequestUsage
+from telegram import Bot
+
 from .config import TELEGRAM_CHAT_ID
+from .models import Memory
+from .storage import AsyncSessionLocal, store_message_archive
+from .utils import get_current_time
 
 
 async def delete_memory(ctx: RunContext, id: int) -> None:

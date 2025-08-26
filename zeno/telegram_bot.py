@@ -1,6 +1,7 @@
-import os
-import dotenv
 import logging
+import os
+
+import dotenv
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -10,7 +11,7 @@ from telegram.ext import (
     filters,
 )
 
-from .storage import init_db, get_old_messages, store_message_archive
+from .storage import get_old_messages, init_db, store_message_archive
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
