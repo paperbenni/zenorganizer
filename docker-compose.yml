@@ -1,0 +1,22 @@
+services:
+  nocodb:
+    image: nocodb/nocodb:latest
+    container_name: nocodb
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Tell NocoDB to use the sqlite DB file inside the container at /data/zeno.db
+      - NC_DB=sqlite:////usr/app/data/zeno.db
+      # Optional user mapping variables (set these in your shell or in a .env file)
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+    volumes:
+      - ./nocodb:/usr/app/data
+    # Run the container processes as the provided UID:GID to avoid file ownership issues
+    user: "${PUID:-1000}:${PGID:-1000}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

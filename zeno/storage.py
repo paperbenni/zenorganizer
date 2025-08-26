@@ -8,7 +8,7 @@ from sqlmodel import SQLModel, desc, select
 from .models import Memory, MessageArchive
 from .utils import get_current_time
 
-DATABASE_URL = "sqlite+aiosqlite:///test.db"
+DATABASE_URL = "sqlite+aiosqlite:///./data/zeno.db"
 async_engine = create_async_engine(DATABASE_URL, echo=False, future=True)
 AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
