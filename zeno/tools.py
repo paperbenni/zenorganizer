@@ -6,7 +6,6 @@ description, parameter names and types, and the return type.
 """
 
 import os
-from typing import Optional
 
 from pydantic_ai import RunContext
 from pydantic_ai.messages import ModelMessagesTypeAdapter, ModelResponse, TextPart
@@ -16,7 +15,6 @@ from telegram import Bot
 from .config import TELEGRAM_CHAT_ID
 from .models import Memory
 from .storage import AsyncSessionLocal, store_message_archive
-from .schemas import MemoryRead
 from .utils import get_current_time
 
 
@@ -38,7 +36,7 @@ async def delete_memory(ctx: RunContext, id: int) -> None:
             await session.commit()
 
 
-async def store_memory(ctx: RunContext, content: str) -> MemoryRead:
+async def store_memory(ctx: RunContext, content: str) -> None:
     """Save Memory.
 
     Store a new memory with the provided content.
@@ -53,11 +51,11 @@ async def store_memory(ctx: RunContext, content: str) -> MemoryRead:
     async with AsyncSessionLocal() as session:  # type: ignore
         session.add(memory)
         await session.commit()
-        await session.refresh(memory)
-        return MemoryRead.model_validate(memory, from_attributes=True)
+        # no return value needed
+        return None
 
 
-async def update_memory(ctx: RunContext, id: int, content: str) -> Optional[MemoryRead]:
+async def update_memory(ctx: RunContext, id: int, content: str) -> None:
     """Update Memory.
 
     Replace the content of an existing memory.
@@ -76,9 +74,8 @@ async def update_memory(ctx: RunContext, id: int, content: str) -> Optional[Memo
             memory.created_time = get_current_time()
             session.add(memory)
             await session.commit()
-            await session.refresh(memory)
-        return MemoryRead.model_validate(memory, from_attributes=True)
-    return None
+            # no return value needed
+        return None
 
 
 async def send_reminder(ctx: RunContext, message: str) -> None:

@@ -2,17 +2,13 @@ from typing import List
 import os
 
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import select, desc
 
-from .models import Memory, MessageArchive, Base
+from .models import Memory, MessageArchive
 from .utils import get_current_time
+from .db import AsyncSessionLocal
 
 DATABASE_URL = "sqlite+aiosqlite:///./data/zeno.db"
-async_engine = create_async_engine(DATABASE_URL, echo=False, future=True)
-AsyncSessionLocal = async_sessionmaker(
-    bind=async_engine, class_=AsyncSession, expire_on_commit=False
-)
 
 
 async def init_db() -> None:
@@ -35,8 +31,10 @@ async def init_db() -> None:
             except Exception:
                 pass
 
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # delegate to db.init_db to centralize session/engine setup
+    from .db import init_db as _init_db
+
+    await _init_db()
 
 
 async def get_memories(show_id: bool) -> str:
