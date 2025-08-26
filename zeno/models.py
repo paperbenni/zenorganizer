@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import pytz
 from sqlmodel import Field, SQLModel
 
 from .utils import get_current_time

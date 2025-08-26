@@ -1,12 +1,9 @@
-from datetime import datetime
 from typing import List
 
-import pytz
 
 from sqlmodel import Session, create_engine, select, desc
 
 from .models import Memory, MessageArchive
-from .utils import get_current_time
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
 
@@ -37,7 +34,6 @@ def get_memories(show_id: bool) -> str:
     return output
 
 
-from pydantic_ai.messages import ToolReturnPart
 
 
 def get_old_messages(limit: int) -> List[ModelMessage]:

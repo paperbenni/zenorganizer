@@ -1,9 +1,9 @@
 
 format:
-    uvx black zeno
+    uvx ruff format
 
 check:
-    uvx pyrefly check
+    uvx ruff check
 
 run:
     uv run main.py

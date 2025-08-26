@@ -3,7 +3,6 @@ import dotenv
 import logging
 from telegram import Update
 from telegram.ext import (
-    Application,
     ApplicationBuilder,
     CommandHandler,
     ContextTypes,
@@ -26,7 +25,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    import logfire
     chat = update.effective_chat
     message = update.message
     if chat is None or message is None:

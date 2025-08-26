@@ -1,8 +1,5 @@
 import os
-from datetime import datetime
-from typing import Callable
 
-import pytz
 
 import dotenv
 import logfire
@@ -10,11 +7,9 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.toolsets import FunctionToolset
-from sqlalchemy.sql.functions import now
 
 from . import storage
 from .models import Memory
-from .storage import get_memories
 from .utils import get_current_time
 
 cleanerprefix = """# RULES
@@ -59,7 +54,6 @@ Here are the Memories in Markdown format:
 
 **end of memories**"""
 
-import dotenv
 dotenv.load_dotenv()
 
 def get_openai_model() -> OpenAIModel:
@@ -280,7 +274,6 @@ def build_reminder_agent() -> Agent:
         # python-telegram-bot's simple API to send a message.
         from telegram import Bot
 
-        from .telegram_bot import Application
 
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         if not token:
