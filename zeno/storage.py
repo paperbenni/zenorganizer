@@ -81,8 +81,15 @@ async def get_old_messages(limit: int) -> List[ModelMessage]:
     return list(messages)
 
 
-async def store_message_archive(content: bytes) -> None:
-    """Persist a serialized message archive."""
+async def store_message_archive(content: bytes | str) -> None:
+    """Persist a serialized message archive.
+
+    Accepts bytes or str. If bytes are provided, decode to UTF-8 text
+    before storing because the DB column is TEXT and archives are JSON.
+    """
+    if isinstance(content, (bytes, bytearray)):
+        content = content.decode()
+
     archive = MessageArchive(content=content, created_time=get_current_time())
     async with AsyncSessionLocal() as session:
         session.add(archive)

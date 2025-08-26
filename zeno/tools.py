@@ -16,6 +16,7 @@ from telegram import Bot
 from .config import TELEGRAM_CHAT_ID
 from .models import Memory
 from .storage import AsyncSessionLocal, store_message_archive
+from .schemas import MemoryRead
 from .utils import get_current_time
 
 
@@ -37,7 +38,7 @@ async def delete_memory(ctx: RunContext, id: int) -> None:
             await session.commit()
 
 
-async def store_memory(ctx: RunContext, content: str) -> int:
+async def store_memory(ctx: RunContext, content: str) -> MemoryRead:
     """Save Memory.
 
     Store a new memory with the provided content.
@@ -53,10 +54,10 @@ async def store_memory(ctx: RunContext, content: str) -> int:
         session.add(memory)
         await session.commit()
         await session.refresh(memory)
-        return memory.id  # type: ignore
+        return MemoryRead.model_validate(memory, from_attributes=True)
 
 
-async def update_memory(ctx: RunContext, id: int, content: str) -> Optional[int]:
+async def update_memory(ctx: RunContext, id: int, content: str) -> Optional[MemoryRead]:
     """Update Memory.
 
     Replace the content of an existing memory.
@@ -76,7 +77,7 @@ async def update_memory(ctx: RunContext, id: int, content: str) -> Optional[int]
             session.add(memory)
             await session.commit()
             await session.refresh(memory)
-            return memory.id  # type: ignore
+        return MemoryRead.model_validate(memory, from_attributes=True)
     return None
 
 

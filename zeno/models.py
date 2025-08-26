@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, LargeBinary
+from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.orm import DeclarativeBase
 
 from .utils import get_current_time
@@ -20,5 +20,5 @@ class MessageArchive(Base):
     __tablename__ = "message_archive"
 
     id = Column(Integer, primary_key=True, index=True)
-    content = Column(LargeBinary, nullable=False)
+    content = Column(Text, nullable=False)
     created_time = Column(DateTime, nullable=False, default=get_current_time)
