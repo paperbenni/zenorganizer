@@ -2,15 +2,14 @@ import os
 
 
 import dotenv
-import logfire
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.toolsets import FunctionToolset
 
 from . import storage
-from .models import Memory
 from .utils import get_current_time
+from .tools import delete_memory, store_memory, update_memory, send_reminder
 
 cleanerprefix = """# RULES
 You are an agent tasked with cleaning up the memories of another agentic system.
@@ -36,8 +35,9 @@ The current time is {now.strftime("%H:%M:%S")} (European)
 """
 
 
-def get_memories_prompt() -> str:
-    mdmemories = storage.get_memories(True)
+async def get_memories_prompt() -> str:
+    mdmemories = await storage.get_memories(True)
+
     return f"""
 # Memories
 Here are the last noteworthy memories that you've collected from the user, including the date and time this information was collected.
@@ -66,65 +66,11 @@ def get_openai_model() -> OpenAIModel:
     return openai_model
 
 
-async def delete_memory(ctx: RunContext, id: int):
-    """
-    Delete a memory
-
-    Args:
-        id: The id of the memory
-    """
-    from sqlmodel import Session
-
-    from .storage import engine
-
-    with Session(engine) as session:  # type: ignore
-        memory = session.get(Memory, id)  # type: ignore
-        if memory:
-            session.delete(memory)  # type: ignore
-            session.commit()  # type: ignore
 
 
-async def store_memory(ctx: RunContext, content: str):
-    """
-    Store a memory
+async def build_chat_agent() -> Agent:
+    mdmem = await get_memories_prompt()
 
-    Args:
-        content: The content of the memory
-    """
-    from sqlmodel import Session
-
-    from .models import Memory
-    from .storage import engine
-
-    memory = Memory(content=content, created_time=get_current_time())
-    with Session(engine) as session:  # type: ignore
-        session.add(memory)  # type: ignore
-        session.commit()  # type: ignore
-
-
-async def update_memory(ctx: RunContext, id: int, content: str):
-    """
-    Update a memory's content by ID
-
-    Args:
-        id: The id of the memory to update
-        content: The new content for the memory
-    """
-    from sqlmodel import Session
-
-    from .models import Memory
-    from .storage import engine
-
-    with Session(engine) as session:  # type: ignore
-        memory = session.get(Memory, id)  # type: ignore
-        if memory:
-            memory.content = content  # type: ignore
-            memory.created_time = get_current_time()  # update timestamp to now
-            session.add(memory)  # type: ignore
-            session.commit()  # type: ignore
-
-
-def build_chat_agent() -> Agent:
     def get_chat_instructions() -> str:
         return f"""# RULES
 When a user sends a new message, decide if the user provided any noteworthy information that should be stored in memory. If so, call the Save Memory tool to store this information in memory.
@@ -137,7 +83,7 @@ You can also mark memories which should be forgotten by inserting a memory stati
 # Tools
 {tooldescriptions["store"]}
 
-{get_memories_prompt()}
+{mdmem}
 {get_time_prompt()}
     """
 
@@ -150,7 +96,8 @@ You can also mark memories which should be forgotten by inserting a memory stati
     return chat_agent
 
 
-def build_splitter_agent() -> Agent:
+async def build_splitter_agent() -> Agent:
+    mdmem = await get_memories_prompt()
     splitter_agent = Agent(
         model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory, store_memory, update_memory])],
@@ -169,7 +116,7 @@ Do not include logs about what you changed inside the memory content.
 {tooldescriptions["store"]}
 {tooldescriptions["update"]}
 
-{get_memories_prompt()}
+{mdmem}
 {get_time_prompt()}
 
 
@@ -179,7 +126,8 @@ Do not include logs about what you changed inside the memory content.
     return splitter_agent
 
 
-def build_aggregator_agent() -> Agent:
+async def build_aggregator_agent() -> Agent:
+    mdmem = await get_memories_prompt()
     aggregator_agent = Agent(
         model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[store_memory, delete_memory])],
@@ -199,7 +147,7 @@ If you see instances of this, split the memories. Make sure to include the date.
 {tooldescriptions["store"]}
 {tooldescriptions["delete"]}
 
-{get_memories_prompt()}
+{mdmem}
 {get_time_prompt()}
 """,
     )
@@ -207,7 +155,8 @@ If you see instances of this, split the memories. Make sure to include the date.
     return aggregator_agent
 
 
-def build_deduplicator_agent() -> Agent:
+async def build_deduplicator_agent() -> Agent:
+    mdmem = await get_memories_prompt()
     dedup_agent = Agent(
         model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
@@ -222,7 +171,7 @@ If there are memories which contradict each other, then assume the newest one is
 # Tools
 {tooldescriptions["delete"]}
 
-{get_memories_prompt()}
+{mdmem}
 {get_time_prompt()}
 """,
     )
@@ -230,7 +179,8 @@ If there are memories which contradict each other, then assume the newest one is
     return dedup_agent
 
 
-def build_garbage_collector_agent() -> Agent:
+async def build_garbage_collector_agent() -> Agent:
+    mdmem = await get_memories_prompt()
     garbage_collector_agent = Agent(
         model=get_openai_model(),
         toolsets=[FunctionToolset(tools=[delete_memory])],
@@ -245,7 +195,7 @@ BE SURE NOT TO REMOVE RECURRING REMINDERS.
 # Tools
 {tooldescriptions["delete"]}
 
-{get_memories_prompt()}
+{mdmem}
 {get_time_prompt()}
 """,
     )
@@ -253,60 +203,15 @@ BE SURE NOT TO REMOVE RECURRING REMINDERS.
     return garbage_collector_agent
 
 
-def build_reminder_agent() -> Agent:
+async def build_reminder_agent() -> Agent:
     """
     Agent that checks memories and sends telegram reminders when time-critical
     memories are due. Activated periodically (every 15 minutes).
     """
 
-    async def send_reminder(ctx: RunContext, message: str):
-        """
-        Send a seminder message
-
-        Args:
-            message: The message to send
-        """
-        # send a telegram message to the hardcoded user (same as user check)
-        import os
-
-        # We can't easily access the live Application here; instead, use bot token and
-        # python-telegram-bot's simple API to send a message.
-        from telegram import Bot
-
-        token = os.environ.get("TELEGRAM_BOT_TOKEN")
-        if not token:
-            return
-        bot = Bot(token=token)
-        # hardcoded chat id (same as in telegram bot user check)
-        chat_id = 1172527123
-        await bot.send_message(chat_id=chat_id, text=message)
-
-        # Also save this reminder as a normal assistant message in the message archive
-        # so it will be included in future `get_old_messages` calls. Construct a
-        # ModelResponse containing a single TextPart and serialize it using the
-        # same adapter used by `store_message_archive`.
-        try:
-            from pydantic_ai.messages import (
-                ModelMessagesTypeAdapter,
-                ModelResponse,
-                TextPart,
-            )
-            from pydantic_ai.usage import RequestUsage
-
-            from .storage import store_message_archive
-
-            response = ModelResponse(
-                parts=[TextPart(content=message)],
-                usage=RequestUsage(),
-                model_name=ctx.model.model_name,
-                timestamp=get_current_time(),
-            )
-            # serialize to bytes the same way archives are stored
-            json_bytes = ModelMessagesTypeAdapter.dump_json([response])
-            store_message_archive(json_bytes)
-        except Exception:
-            # Don't let failures to persist the archive stop the reminder sending
-            logfire.info("failed to store reminder message")
+    # Use the refactored send_reminder tool (imported from .tools). The tool
+    # handles delivery and persistence of reminder messages.
+    mdmem = await get_memories_prompt()
 
     reminder_agent = Agent(
         model=get_openai_model(),
@@ -328,7 +233,7 @@ Use this tool to store information about the user and reminders. Use this to sto
 ## Send Reminder
 Use this tool to send a reminder. Be very liberal with this. If something looks like it could be relevant, it probably is.
 
-{get_memories_prompt()}
+{mdmem}
 {get_time_prompt()}
 """,
     )

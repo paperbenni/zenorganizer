@@ -35,25 +35,31 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(message.from_user)
     if message.from_user is None:
         return
-    # TODO: make this configurable or use the DB
-    if message.from_user.id != 1172527123:
+    # Check against configured allowed chat id
+    from .config import TELEGRAM_CHAT_ID
+
+    if message.from_user.id != TELEGRAM_CHAT_ID:
         await context.bot.send_message(
             chat_id=chat.id, text="You are not authorized to use this bot."
         )
         return
     from .agents import build_chat_agent
 
-    chatagent = build_chat_agent()
-    response = await chatagent.run(message.text, message_history=get_old_messages(10))
+    chatagent = await build_chat_agent()
+    history = await get_old_messages(10)
+    response = await chatagent.run(message.text, message_history=history)
     messages = response.new_messages_json()
     # use storage helper to persist the message archive
-    store_message_archive(messages)
+    await store_message_archive(messages)
     await context.bot.send_message(chat_id=chat.id, text=response.output)
 
 
 def run_bot() -> None:
     dotenv.load_dotenv()
-    init_db()
+    # Ensure DB initialized before running the bot
+    import asyncio as _asyncio
+
+    _asyncio.run(init_db())
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment")

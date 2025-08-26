@@ -1,65 +1,69 @@
 from typing import List
 
-
-from sqlmodel import Session, create_engine, select, desc
+from sqlmodel import select, desc, SQLModel
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 from .models import Memory, MessageArchive
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+from .utils import get_current_time
+
+DATABASE_URL = "sqlite+aiosqlite:///test.db"
+async_engine = create_async_engine(DATABASE_URL, echo=False, future=True)
+AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
 
-engine = create_engine("sqlite:///test.db", echo=True)
+async def init_db() -> None:
+    """Create database tables if they do not exist."""
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
 
 
-def init_db() -> None:
-    """Create tables if they don't exist."""
-    from sqlmodel import SQLModel
+async def get_memories(show_id: bool) -> str:
+    """Return stored memories as plain text."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Memory))
+        memories = result.scalars().all()
 
-    SQLModel.metadata.create_all(engine)
-
-
-def get_memories(show_id: bool) -> str:
-    memories = []
-    output = ""
-    with Session(engine) as session:  # type: ignore
-        memories.extend(session.exec(select(Memory)).all())  # type: ignore
+    parts: list[str] = []
     for memory in memories:
         if show_id:
-            output += f"\n---\nID: {memory.id}"
-        output += f"""
-{memory.created_time.strftime("%Y-%m-%d %H:%M")}
-{memory.content}
----
-        """
-    return output
-    return output
+            parts.append(f"\n---\nID: {memory.id}")
+        parts.append(
+            f"{memory.created_time.strftime('%Y-%m-%d %H:%M')}\n{memory.content}\n---"
+        )
+    return "\n".join(parts)
 
 
-def get_old_messages(limit: int) -> List[ModelMessage]:
+async def get_old_messages(limit: int) -> List[ModelMessage]:
+    """Return the most recent message archives as a flat list of ModelMessage.
+
+    Archives are read newest-first from the DB; we reverse them to produce
+    chronological order for consumption by the chat agent.
+    """
     messages: list[ModelMessage] = []
-    with Session(engine) as session:  # type: ignore
-        archives = session.exec(
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
             select(MessageArchive)
             .order_by(desc(MessageArchive.created_time))
             .limit(limit)
-        ).all()
+        )
+        archives = result.scalars().all()
 
-        archivecounter = 0
-        for archive in reversed(archives):
-            msgs = ModelMessagesTypeAdapter.validate_json(archive.content)
-            messages.extend(msgs)
-            archivecounter += 1
-            if archivecounter >= limit:
-                break
+    archivecounter = 0
+    for archive in reversed(archives):
+        msgs = ModelMessagesTypeAdapter.validate_json(archive.content)
+        messages.extend(msgs)
+        archivecounter += 1
+        if archivecounter >= limit:
+            break
 
-    # We collected newest-first; return messages in chronological order (oldest->newest)
-    messages = list(messages)
-    return messages
+    return list(messages)
 
 
-def store_message_archive(content: bytes) -> None:
-    from .agents import get_current_time
-
+async def store_message_archive(content: bytes) -> None:
+    """Persist a serialized message archive."""
     archive = MessageArchive(content=content, created_time=get_current_time())
-    with Session(engine) as session:  # type: ignore
-        session.add(archive)  # type: ignore
-        session.commit()  # type: ignore
+    async with AsyncSessionLocal() as session:
+        session.add(archive)
+        await session.commit()
