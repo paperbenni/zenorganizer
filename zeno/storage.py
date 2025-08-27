@@ -12,12 +12,14 @@ DATABASE_URL = "sqlite+aiosqlite:///./data/zeno.db"
 
 
 async def init_db() -> None:
-    """Create database tables if they do not exist.
+    """Ensure the database directory exists and verify schema presence.
 
-    Ensure the directory for the SQLite database file exists before creating
-    tables so that the engine can create the DB file successfully.
+    The application relies on Alembic to create and migrate the schema.
+    This helper will ensure the ./data directory exists, then perform a
+    lightweight check that the expected tables are present. If the schema
+    appears to be missing, it raises a RuntimeError with guidance.
     """
-    # If using a sqlite URL, extract the file path and ensure its parent dir exists
+    # Ensure the parent directory for the sqlite DB file exists
     if DATABASE_URL.startswith("sqlite") and "///" in DATABASE_URL:
         try:
             db_path = DATABASE_URL.split("///", 1)[1]
@@ -31,10 +33,24 @@ async def init_db() -> None:
             except Exception:
                 pass
 
-    # delegate to db.init_db to centralize session/engine setup
-    from .db import init_db as _init_db
+    # Perform a lightweight schema check by attempting a trivial query
+    # against a known table. If the table doesn't exist, the database has
+    # not been initialized via Alembic.
+    try:
+        async with AsyncSessionLocal() as session:
+            # Query a known table (Memory) for a single row. If the table
+            # is missing this will raise an OperationalError / DatabaseError.
+            await session.execute(select(Memory).limit(1))
+    except Exception as exc:
+        raise RuntimeError(
+            "Database schema not found. Initialize the database with Alembic: 'uv run alembic upgrade head'"
+        ) from exc
 
-    await _init_db()
+    import logging
+    logging.getLogger(__name__).info(
+        "storage.init_db(): ensured data dir exists and verified DB schema via a lightweight check."
+    )
+    return
 
 
 async def get_memories(show_id: bool) -> str:

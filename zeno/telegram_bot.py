@@ -75,9 +75,19 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def run_bot() -> None:
     dotenv.load_dotenv()
-    # Ensure DB initialized before running the bot
+
+    # The application now relies on Alembic for schema creation/migrations.
+    # storage.init_db() will ensure the data directory exists but won't create
+    # tables. If the database hasn't been created yet, the user must run:
+    #
+    #     uv run alembic upgrade head
+    #
+    # before starting the bot. We log a helpful message here rather than
+    # attempting to create the schema at runtime.
     import asyncio as _asyncio
 
+    # Ensure DB directory exists and schema is present (Alembic-managed).
+    # storage.init_db() will raise if the schema is not initialized.
     _asyncio.run(init_db())
 
     # Ensure main thread has an event loop for libraries that call get_event_loop()

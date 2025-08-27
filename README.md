@@ -7,6 +7,14 @@ AI chatbot for organizing your life.
 put your keys in `.env`
 examples can be seen in `example.env`
 
+### First time setup
+
+```bash
+uv run alembic upgrade head
+```
+
+### Running
+
 ```bash
 uv sync
 uv run main.py

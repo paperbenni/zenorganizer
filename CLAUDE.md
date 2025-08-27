@@ -93,7 +93,7 @@ High-level architecture and where to look
     - Provides get_memories, get_old_messages, store_message_archive, init_db
   - zeno/db.py
     - SQLAlchemy async engine/sessionmaker (sqlite+aiosqlite:///./data/zeno.db)
-    - init_db() runs metadata.create_all
+    - Schema creation is handled via Alembic migrations (do not create tables at runtime)
   - zeno/models.py
     - SQLAlchemy models: Memory and MessageArchive
 
