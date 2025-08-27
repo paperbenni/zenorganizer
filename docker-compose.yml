@@ -5,10 +5,6 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
-    environment:
-      # Optional user mapping variables (set these in your shell or in a .env file)
-      - PUID=${PUID:-1000}
-      - PGID=${PGID:-1000}
     volumes:
       - ./data:/usr/app/data
     # Run the container processes as the provided UID:GID to avoid file ownership issues
