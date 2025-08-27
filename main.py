@@ -4,7 +4,7 @@ def main():
     # background thread so both the API and the bot run together.
     import threading
     from zeno.telegram_bot import run_bot
-    from zeno.api_flask import app as flask_app
+    from zeno.api import app as api_app
     import logfire
     import os
     import dotenv
@@ -19,12 +19,16 @@ def main():
         logfire.info("starting agent")
         logfire.instrument_pydantic_ai()
 
-    def run_flask():
-        # Use Flask's built-in server for dev usage.
-        flask_app.run(host="0.0.0.0", port=8001)
+    def run_api():
+        # Run FastAPI app via uvicorn in a background thread for development.
+        # This keeps the behavior similar to the previous implementation where
+        # the web server runs alongside the bot in the same process.
+        import uvicorn
 
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
+        uvicorn.run(api_app, host="0.0.0.0", port=8001)
+
+    api_thread = threading.Thread(target=run_api, daemon=True)
+    api_thread.start()
 
     # Periodically run the deduplicator agent in a background thread.
     def run_periodic_maintenance(interval_hours: int = 10) -> None:
