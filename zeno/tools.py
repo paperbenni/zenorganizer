@@ -17,6 +17,7 @@ from .models import Memory
 from .storage import AsyncSessionLocal, store_message_archive
 from .utils import get_current_time, split_and_send
 
+
 async def delete_memory(ctx: RunContext, id: int) -> None:
     """Delete Memory.
 

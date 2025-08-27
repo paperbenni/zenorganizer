@@ -26,7 +26,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # use split_and_send to safely handle long messages
     from .utils import split_and_send
 
-    await split_and_send(send=context.bot.send_message, chat_id=chat.id, text="Hello tere")
+    await split_and_send(
+        send=context.bot.send_message, chat_id=chat.id, text="Hello tere"
+    )
     logfire.info(f"Received /start from {chat.id}")
 
 
@@ -65,7 +67,9 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await store_message_archive(messages)
     from .utils import split_and_send
 
-    await split_and_send(send=context.bot.send_message, chat_id=chat.id, text=response.output)
+    await split_and_send(
+        send=context.bot.send_message, chat_id=chat.id, text=response.output
+    )
     logfire.info(f"Responded to user {message.from_user.id} via bot")
 
 

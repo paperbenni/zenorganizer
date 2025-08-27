@@ -7,7 +7,9 @@ def get_current_time() -> datetime:
     return datetime.now(tz=ZoneInfo("Europe/Berlin"))
 
 
-async def split_and_send(send, text: str, chat_id: int | None = None, max_length: int = 4096, **kwargs):
+async def split_and_send(
+    send, text: str, chat_id: int | None = None, max_length: int = 4096, **kwargs
+):
     """Send `text` directly if it's short enough, otherwise fall back to a
     very simple splitter.
 
@@ -28,9 +30,15 @@ async def split_and_send(send, text: str, chat_id: int | None = None, max_length
         except TypeError:
             # fallback to positional signature
             if chat_id is not None:
-                await send(chat_id, text, **{k: v for k, v in send_kwargs.items() if k != "text"})
+                await send(
+                    chat_id,
+                    text,
+                    **{k: v for k, v in send_kwargs.items() if k != "text"},
+                )
             else:
-                await send(text, **{k: v for k, v in send_kwargs.items() if k != "text"})
+                await send(
+                    text, **{k: v for k, v in send_kwargs.items() if k != "text"}
+                )
         return
 
     # Very basic splitting: window the text and prefer splitting at a newline,
@@ -64,6 +72,12 @@ async def split_and_send(send, text: str, chat_id: int | None = None, max_length
                 await send(**send_kwargs)
         except TypeError:
             if chat_id is not None:
-                await send(chat_id, chunk, **{k: v for k, v in send_kwargs.items() if k != "text"})
+                await send(
+                    chat_id,
+                    chunk,
+                    **{k: v for k, v in send_kwargs.items() if k != "text"},
+                )
             else:
-                await send(chunk, **{k: v for k, v in send_kwargs.items() if k != "text"})
+                await send(
+                    chunk, **{k: v for k, v in send_kwargs.items() if k != "text"}
+                )
