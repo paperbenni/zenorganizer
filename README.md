@@ -24,7 +24,6 @@ uv run main.py
 
 Run memory gardeners on schedule
 Web interface
-- view memories
 - auth
 - add telegram users
 

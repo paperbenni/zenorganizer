@@ -139,6 +139,7 @@ Make sure that if the original memories were time sensitive to include the date 
 Keep in mind aggregating a memory changes its creation date. If a memory is time sensitive, include the full date it pertains to in the memory content.
 IMPORTANT: Keep information which should be deleted separately separate. Examples of this include reminders about information, and the information itself.
 If you see instances of this, split the memories. Make sure to include the date.
+Semi long memories are okay, but make sure they do not grow too long.
 
 # Tools
 {tooldescriptions["store"]}
