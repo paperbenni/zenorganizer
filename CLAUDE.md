@@ -23,6 +23,19 @@ Key commands
   - uvx ty check          # type checks (project configured for ty)
 - Database / data dir helpers
   - just ensure-data-dir   # create ./data and set ownership (used for nocodb setup)
+
+Database migrations (alembic)
+- Use the alembic CLI (installed in the uv-managed environment) to generate and apply migrations. Do not hand-edit alembic version files unless absolutely necessary; prefer alembic autogeneration.
+- Typical workflow (run inside the uv environment):
+  - uv run alembic revision --autogenerate -m "describe changes"
+  - uv run alembic upgrade head
+- Useful commands:
+  - uv run alembic history --verbose
+  - uv run alembic current
+  - uv run alembic downgrade -1  # step back one revision
+- Notes:
+  - Make model/schema changes in zeno/models.py first, then run alembic revision --autogenerate to create a migration reflecting those changes.
+  - The project uses SQLite; alembic autogenerate should work for most schema changes but inspect generated migrations before applying them to ensure correctness.
 - Docker / nocodb (project helper)
   - docker compose up -d   # start nocodb (see justfile nocodb-up)
   - docker compose down

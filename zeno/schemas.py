@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class MemoryCreate(BaseModel):
     content: str
+    relevance: float | None = 1.0
 
 
 class MemoryRead(MemoryCreate):
