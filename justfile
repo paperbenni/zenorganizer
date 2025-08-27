@@ -32,3 +32,11 @@ start-nocodb:
 # shortcuts
 e:
     uv run nvim .
+
+# Alembic helpers (run inside the uv-managed environment)
+alembic-upgrade:
+    uv run alembic upgrade head
+
+# Create an autogenerate revision. Pass a message with `just alembic-revision message="my msg"`
+alembic-revision message:
+    uv run alembic revision --autogenerate -m "{{message}}"
