@@ -47,6 +47,7 @@ async def init_db() -> None:
         ) from exc
 
     import logging
+
     logging.getLogger(__name__).info(
         "storage.init_db(): ensured data dir exists and verified DB schema via a lightweight check."
     )

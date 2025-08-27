@@ -18,7 +18,9 @@ class Memory(Base):
     relevance = Column(Float, nullable=False, default=1.0)
 
     __table_args__ = (
-        CheckConstraint("relevance >= 0.0 AND relevance <= 1.0", name="ck_memory_relevance_range"),
+        CheckConstraint(
+            "relevance >= 0.0 AND relevance <= 1.0", name="ck_memory_relevance_range"
+        ),
     )
 
 
