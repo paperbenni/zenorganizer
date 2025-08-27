@@ -67,25 +67,29 @@ async def _periodic_maintenance_loop(interval_hours: int) -> None:
             dedup_agent = await build_deduplicator_agent()
             resp = await dedup_agent.run("Deduplicate memories")
             logger.info(
-                "Deduplicator run complete: %s", getattr(resp, "output", "(no output)"),
+                "Deduplicator run complete: %s",
+                getattr(resp, "output", "(no output)"),
             )
 
             aggregator = await build_aggregator_agent()
             resp = await aggregator.run("Aggregate memories")
             logger.info(
-                "Aggregator run complete: %s", getattr(resp, "output", "(no output)"),
+                "Aggregator run complete: %s",
+                getattr(resp, "output", "(no output)"),
             )
 
             splitter = await build_splitter_agent()
             resp = await splitter.run("Split overaggregated memories")
             logger.info(
-                "Splitter run complete: %s", getattr(resp, "output", "(no output)"),
+                "Splitter run complete: %s",
+                getattr(resp, "output", "(no output)"),
             )
 
             gc = await build_garbage_collector_agent()
             resp = await gc.run("Garbage collect old/unneeded memories")
             logger.info(
-                "Garbage collector run complete: %s", getattr(resp, "output", "(no output)"),
+                "Garbage collector run complete: %s",
+                getattr(resp, "output", "(no output)"),
             )
 
         except Exception:
@@ -128,7 +132,10 @@ async def _reminder_loop(interval_minutes: int) -> None:
             reminder = await build_reminder_agent()
             logfire.info("Running reminder agent")
             resp = await reminder.run("Check for due reminders", message_history=None)
-            logger.info("Reminder agent run complete: %s", getattr(resp, "output", "(no output)"))
+            logger.info(
+                "Reminder agent run complete: %s",
+                getattr(resp, "output", "(no output)"),
+            )
         except Exception:
             logger.exception("Reminder agent failed")
             logfire.info("Reminder agent failed")
