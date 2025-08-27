@@ -23,7 +23,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat is None:
         return
-    await context.bot.send_message(chat_id=chat.id, text="Hello tere")
+    # use split_and_send to safely handle long messages
+    from .utils import split_and_send
+
+    await split_and_send(send=context.bot.send_message, chat_id=chat.id, text="Hello tere")
     logfire.info(f"Received /start from {chat.id}")
 
 
@@ -41,8 +44,12 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from .config import TELEGRAM_CHAT_ID
 
     if message.from_user.id != TELEGRAM_CHAT_ID:
-        await context.bot.send_message(
-            chat_id=chat.id, text="You are not authorized to use this bot."
+        from .utils import split_and_send
+
+        await split_and_send(
+            send=context.bot.send_message,
+            chat_id=chat.id,
+            text="You are not authorized to use this bot.",
         )
         logfire.info(f"Unauthorized access attempt from user {message.from_user.id}")
         return
@@ -56,7 +63,9 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     messages = response.new_messages_json()
     # use storage helper to persist the message archive
     await store_message_archive(messages)
-    await context.bot.send_message(chat_id=chat.id, text=response.output)
+    from .utils import split_and_send
+
+    await split_and_send(send=context.bot.send_message, chat_id=chat.id, text=response.output)
     logfire.info(f"Responded to user {message.from_user.id} via bot")
 
 

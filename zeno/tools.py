@@ -15,8 +15,7 @@ from telegram import Bot
 from .config import TELEGRAM_CHAT_ID
 from .models import Memory
 from .storage import AsyncSessionLocal, store_message_archive
-from .utils import get_current_time
-
+from .utils import get_current_time, split_and_send
 
 async def delete_memory(ctx: RunContext, id: int) -> None:
     """Delete Memory.
@@ -94,7 +93,8 @@ async def send_reminder(ctx: RunContext, message: str) -> None:
         return
 
     bot = Bot(token=token)
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
+    # Use split_and_send to handle messages longer than Telegram's limit
+    await split_and_send(send=bot.send_message, text=message, chat_id=TELEGRAM_CHAT_ID)
 
     response = ModelResponse(
         parts=[TextPart(content=message)],
