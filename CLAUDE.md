@@ -128,3 +128,6 @@ Notes / caveats
 
 If a CLAUDE.md already exists
 - Suggest improvements instead of replacing it. (This run created the initial CLAUDE.md.)
+
+Repository rule
+- **Important:** Do not ever create git commits. Do not create, modify, or push commits in this repository; follow the contributor workflow described in project documentation instead.

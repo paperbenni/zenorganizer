@@ -43,3 +43,6 @@ This document gives concise contributor rules specific to Zenorganizer.
 - Rotate API keys stored in config and document where to set them in `example.env`.
 
 If you want, I can add a `tests/` scaffold, CI config, or a `CONTRIBUTING.md` with expanded workflow.
+
+Repository rule
+- **Important:** Do not ever create git commits. Do not create, modify, or push commits in this repository; follow the contributor workflow described in project documentation instead.
