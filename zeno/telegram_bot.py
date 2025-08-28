@@ -14,6 +14,7 @@ from telegram.ext import (
 
 from .storage import get_old_messages, init_db, store_message_archive
 
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat is None:

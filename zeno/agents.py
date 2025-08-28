@@ -51,7 +51,6 @@ Here are the Memories in Markdown format:
 **end of memories**"""
 
 
-
 def get_openai_model() -> OpenAIModel:
     # Load environment when the model is needed to avoid import-time side-effects.
     dotenv.load_dotenv()
