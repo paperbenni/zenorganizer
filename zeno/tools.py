@@ -6,6 +6,7 @@ description, parameter names and types, and the return type.
 """
 
 import os
+import logging
 
 from pydantic_ai import RunContext
 from pydantic_ai.messages import ModelMessagesTypeAdapter, ModelResponse, TextPart
@@ -90,12 +91,22 @@ async def send_reminder(ctx: RunContext, message: str) -> None:
     - None
     """
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    logger = logging.getLogger(__name__)
     if not token:
-        return
+        logger.error("TELEGRAM_BOT_TOKEN not set; cannot send reminder")
+        # Raise so agent runtimes can observe the failure and retry if desired
+        raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment")
 
     bot = Bot(token=token)
     # Use split_and_send to handle messages longer than Telegram's limit
-    await split_and_send(send=bot.send_message, text=message, chat_id=TELEGRAM_CHAT_ID)
+    try:
+        await split_and_send(
+            send=bot.send_message, text=message, chat_id=TELEGRAM_CHAT_ID
+        )
+    except Exception as exc:
+        logger.exception("Failed to send reminder via Telegram: %s", exc)
+        # Propagate the exception so callers/agents can retry or react
+        raise
 
     response = ModelResponse(
         parts=[TextPart(content=message)],

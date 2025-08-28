@@ -6,9 +6,7 @@ from sqlalchemy import select, desc
 
 from .models import Memory, MessageArchive
 from .utils import get_current_time
-from .db import AsyncSessionLocal
-
-DATABASE_URL = "sqlite+aiosqlite:///./data/zeno.db"
+from .db import AsyncSessionLocal, DATABASE_URL
 
 
 async def init_db() -> None:

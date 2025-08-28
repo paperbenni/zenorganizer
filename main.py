@@ -23,8 +23,9 @@ def setup_logfire() -> None:
     dotenv.load_dotenv()
 
     token = os.environ.get("LOGFIRE_TOKEN")
+    logger = logging.getLogger(__name__)
     if token:
-        print("Logging to LogFire!!!")
+        logger.info("Configuring LogFire instrumentation")
         logfire.configure(token=token, scrubbing=False)
         logfire.info("starting agent")
         logfire.instrument_pydantic_ai()
@@ -44,7 +45,9 @@ def start_api_thread() -> threading.Thread:
     return t
 
 
-async def _periodic_maintenance_loop(interval_hours: int, offset_seconds: int = 300) -> None:
+async def _periodic_maintenance_loop(
+    interval_hours: int, offset_seconds: int = 300
+) -> None:
     """Async loop for periodic maintenance tasks (dedup/aggregate/split/gc).
 
     Runs are aligned to wall-clock multiples of the interval, with an additional
@@ -110,7 +113,9 @@ async def _periodic_maintenance_loop(interval_hours: int, offset_seconds: int = 
         await asyncio.sleep(next_run - now)
 
 
-def start_periodic_thread(interval_hours: int = 10, offset_seconds: int = 300) -> threading.Thread:
+def start_periodic_thread(
+    interval_hours: int = 10, offset_seconds: int = 300
+) -> threading.Thread:
     """Start the periodic maintenance loop in a daemon thread.
 
     offset_seconds will be passed to the loop to offset the maintenance runs so
@@ -120,7 +125,9 @@ def start_periodic_thread(interval_hours: int = 10, offset_seconds: int = 300) -
     def target() -> None:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(_periodic_maintenance_loop(interval_hours, offset_seconds))
+        loop.run_until_complete(
+            _periodic_maintenance_loop(interval_hours, offset_seconds)
+        )
 
     t = threading.Thread(target=target, daemon=True)
     t.start()
