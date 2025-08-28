@@ -7,6 +7,9 @@ check:
     uvx ruff check
     uvx ty check
 
+test:
+    uv run pytest
+
 run:
     uv run main.py
 
