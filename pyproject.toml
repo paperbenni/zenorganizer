@@ -1,9 +1,12 @@
 [project]
 name = "zeno"
 version = "0.1.0"
-description = "Add your description here"
+description = "AI chatbot for organizing your life."
+authors = [{ name = "paperbenni", email = "paperbenni@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.13"
+license = { text = "MIT" }
+keywords = ["ai", "chatbot", "organizer", "telegram"]
 dependencies = [
     "aiosqlite>=0.21.0",
     "dotenv>=0.9.9",
@@ -19,12 +22,12 @@ dependencies = [
     "uvicorn>=0.35.0",
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/paperbenni/zenorganizer"
+"Repository" = "https://github.com/paperbenni/zenorganizer"
+
 [tool.pyrefly]
 project-includes = ["**/*"]
-project-excludes = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/*venv/**/*",
-]
+project-excludes = ["**/node_modules", "**/__pycache__", "**/*venv/**/*"]
 
 [tool]
