@@ -14,11 +14,6 @@ from telegram.ext import (
 
 from .storage import get_old_messages, init_db, store_message_archive
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
-
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat is None:
@@ -74,6 +69,12 @@ async def run_chat_agent(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def run_bot() -> None:
+    # Configure logging and environment only when starting the bot to avoid
+    # side-effects at import time.
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=logging.INFO,
+    )
     dotenv.load_dotenv()
 
     # The application now relies on Alembic for schema creation/migrations.
