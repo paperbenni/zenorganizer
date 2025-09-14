@@ -19,6 +19,11 @@ app = FastAPI()
 logger = logging.getLogger("zeno.api")
 
 # Simple in-memory task registry (task_id -> asyncio.Task) and results mapping
+# Note: Using in-memory storage is acceptable here because:
+# 1. Tasks are short-lived AI agent operations (not long-running jobs)
+# 2. Tasks are not resumed upon server restarts (by design)
+# 3. If a server restarts, clients can simply retry their requests
+# 4. This keeps the API simple and dependency-free
 _tasks: Dict[str, asyncio.Task] = {}
 _results: Dict[str, Dict[str, Any]] = {}
 
