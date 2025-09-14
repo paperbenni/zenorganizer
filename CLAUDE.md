@@ -3,8 +3,9 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Summary
-- Minimal Python async service that runs a Telegram bot and a small Flask API in the same process.
+- Minimal Python async service that runs a Telegram bot and a FastAPI web server in the same process.
 - Uses pydantic_ai Agents to implement memory/agent behavior; agents call back into local async "tool" functions which persist to a SQLite DB and send Telegram messages.
+- Features periodic background maintenance (deduplication, aggregation, splitting, garbage collection) and reminder agents.
 
 Key commands
 - Development / run
@@ -20,7 +21,7 @@ Key commands
 - Lint / format / checks (shortcuts in justfile)
   - uvx ruff format       # format code with ruff
   - uvx ruff check        # ruff lint
-  - uvx ty check          # type checks (project configured for ty)
+  - uvx ty check          # type checks (project configured for ty, but ty not installed)
 - Database / data dir helpers
   - just ensure-data-dir   # create ./data and set ownership (used for nocodb setup)
 
@@ -36,22 +37,23 @@ Database migrations (alembic)
 - Notes:
   - Make model/schema changes in zeno/models.py first, then run alembic revision --autogenerate to create a migration reflecting those changes.
   - The project uses SQLite; alembic autogenerate should work for most schema changes but inspect generated migrations before applying them to ensure correctness.
+  - Use justfile shortcuts: `just alembic-upgrade` and `just alembic-revision message="changes"`
 - Docker / nocodb (project helper)
   - docker compose up -d   # start nocodb (see justfile nocodb-up)
   - docker compose down
 - Running agents / debugging via API
   - curl -X POST "http://localhost:8001/deduplicate?wait=1"  # run deduplicator synchronously for debugging
-  - GET /memories and /old_messages endpoints are available on the Flask app (port 8001 by default)
+  - Available endpoints: GET /memories, GET /old_messages, POST /deduplicate, POST /aggregate, POST /split, POST /garbage_collect, POST /reminders, GET /tasks/{task_id}
 - Tests
-  - There are currently no tests in the repository. If tests are added, run them with:
-    - python -m pytest
-    - python -m pytest path/to/test_file.py::test_name  # run a single test
+  - Tests exist in tests/ directory. Run them with:
+    - uv run pytest
+    - uv run pytest path/to/test_file.py::test_name  # run a single test
 
 Environment and important variables
 - Put secrets and configuration in a .env file (example.env is included).
 - Environment variables referenced in code:
   - TELEGRAM_BOT_TOKEN    # required for bot and send_reminder tool
-  - TELEGRAM_CHAT_ID      # optional override; default present in zeno/config.py
+  - TELEGRAM_CHAT_ID      # required for security - no default, must be set
   - OPENAI_API_KEY        # used by pydantic_ai OpenAIProvider
   - MODEL_NAME            # model name passed to OpenAIModel
   - OPENAI_BASE_URL       # optional custom base URL for OpenAI provider
@@ -60,30 +62,34 @@ Environment and important variables
 High-level architecture and where to look
 - Entry point
   - main.py
-    - Starts: Flask dev server (in a background thread) + Telegram polling bot (polling in main thread)
-    - Spawns background threads for periodic maintenance (dedup/aggregate/split/gc) and reminders
+    - Starts: FastAPI server (in background thread via uvicorn) + Telegram polling bot (in main thread)
+    - Spawns background threads for periodic maintenance (dedup/aggregate/split/gc every 10 hours) and reminders (every 15 minutes)
 
 - Web API
-  - zeno/api_flask.py
-    - Lightweight Flask async endpoints for: /memories, /deduplicate (background task support), /tasks/<id>, /old_messages
-    - Background task registry stored in-memory for short-lived debug tasks
+  - zeno/api.py
+    - FastAPI endpoints for: /memories, /deduplicate, /aggregate, /split, /garbage_collect, /reminders, /tasks/{id}, /old_messages
+    - Background task registry stored in-memory for short-lived agent operations
+    - All agent endpoints support ?wait=1 for synchronous debugging
 
 - Telegram bot
   - zeno/telegram_bot.py
     - Uses python-telegram-bot ApplicationBuilder with polling
     - Handlers: /start and a message handler that forwards messages to the chat agent
+    - Enforces security via TELEGRAM_CHAT_ID authorization check
     - Ensures DB init via zeno.storage.init_db() before starting
 
 - Agents and decision logic
   - zeno/agents.py
     - Builds several Agent instances (pydantic_ai) wired to an OpenAIModel
     - Agents: chat_agent (handles incoming chat messages), deduplicator, aggregator, splitter, garbage_collector, reminder_agent
-    - Agents are configured with human-readable instructions and a small set of tool function bindings
+    - Agents are configured with detailed instructions and tool function bindings
+    - All agents receive current time (Europe/Berlin) and memory context
 
 - Tool functions (what agents can call)
   - zeno/tools.py
     - Async functions exposed to agents: store_memory, update_memory, delete_memory, send_reminder
     - send_reminder uses python-telegram-bot Bot to send messages and persists the message archive
+    - All tools handle database operations via AsyncSessionLocal
 
 - Storage / DB
   - zeno/storage.py
@@ -91,13 +97,16 @@ High-level architecture and where to look
     - Storage is implemented with async SQLAlchemy (async engine/session) and all storage helpers are async; call them with await
     - Ensures ./data directory exists when initialising DB
     - Provides get_memories, get_old_messages, store_message_archive, init_db
+    - init_db() validates schema presence but doesn't create tables (Alembic-managed)
   - zeno/db.py
     - SQLAlchemy async engine/sessionmaker (sqlite+aiosqlite:///./data/zeno.db)
     - Schema creation is handled via Alembic migrations (do not create tables at runtime)
   - zeno/models.py
-    - SQLAlchemy models: Memory and MessageArchive
+    - SQLAlchemy models: Memory (id, content, created_time, relevance) and MessageArchive (id, content, created_time)
 
-- Utilities
+- Configuration
+  - zeno/config.py
+    - TELEGRAM_CHAT_ID validation (required for security)
   - zeno/utils.py
     - get_current_time() (Europe/Berlin timezone)
     - split_and_send() helper to safely send long Telegram messages
@@ -105,13 +114,15 @@ High-level architecture and where to look
 Data and persistence
 - Local SQLite DB: ./data/zeno.db (DATABASE_URL constant in zeno/db.py and zeno/storage.py)
 - Message archives stored as JSON text in MessageArchive.content
+- Memories stored with content, creation time, and relevance score
 
 Developer notes for future Claude Code instances
 - Look at zeno/agents.py first to understand available agents and the tool surface they expect.
 - Tool functions in zeno/tools.py have the minimal contracts agents rely on; changes to their signatures must be reflected in the agent FunctionToolset wiring.
-- The Flask API endpoints are small and are useful for manual testing and triggering agents (see /deduplicate and /tasks/<id>). The /deduplicate endpoint supports ?wait=1 to block the request until the agent run completes (useful for debugging).
-- DB initialization: call zeno.storage.init_db() (or run the application) before invoking agents that persist memories.
+- The FastAPI endpoints are useful for manual testing and triggering agents. All agent endpoints support ?wait=1 for synchronous debugging.
+- DB initialization: call zeno.storage.init_db() (or run alembic upgrade head) before invoking agents that persist memories.
 - When modifying reminders/agent logic, inspect send_reminder and store_message_archive behavior—reminders both deliver (via Telegram) and write an archive entry so agents can avoid duplicate sends.
+- The project requires TELEGRAM_CHAT_ID to be set for security - this is validated at runtime in zeno/config.py.
 
 Files and areas to inspect for specific changes
 - Agent prompts & rules: zeno/agents.py
@@ -119,15 +130,18 @@ Files and areas to inspect for specific changes
 - Persistence layer: zeno/storage.py, zeno/db.py, zeno/models.py
 - Bot glue and handlers: zeno/telegram_bot.py
 - HTTP endpoints for quick debugging: zeno/api.py (FastAPI)
+- Configuration: zeno/config.py
 
 Notes / caveats
-- The project runs an ASGI FastAPI app (uvicorn) for development — this is intended for development/debugging, not production deployment.
+- The project runs a FastAPI app with uvicorn for development — this is intended for development/debugging, not production deployment.
 - The application uses polling for the Telegram bot (Application.run_polling()). For production, consider webhook-based delivery.
 - Timezone: get_current_time() returns Europe/Berlin; be mindful when reasoning about reminders/time-sensitive logic.
-- There are no automated tests in the repo at present — add pytest tests under a tests/ directory and run with pytest.
+- Background maintenance runs every 10 hours with offset, reminders run every 15 minutes, both aligned to wall-clock intervals.
+- TELEGRAM_CHAT_ID is required for security - the bot will reject messages from unauthorized users.
+- Memory relevance field exists but is mostly unused (default 1.0).
 
 If a CLAUDE.md already exists
-- Suggest improvements instead of replacing it. (This run created the initial CLAUDE.md.)
+- Suggest improvements instead of replacing it. (This run improved the existing CLAUDE.md.)
 
 Repository rule
 - **Important:** Do not ever create git commits. Do not create, modify, or push commits in this repository; follow the contributor workflow described in project documentation instead.
